@@ -50,10 +50,13 @@ kotlin {
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.uiToolingPreview)
 
-                // Choco-solver — MUST exclude xchart (Android-banned per smoke test 2026-05-17)
-                implementation(libs.choco.solver) {
-                    exclude(group = "org.knowm.xchart")
-                }
+                // Choco-solver — JVM-only, belongs in jvmMain/androidMain not commonMain.
+                // TEMP commented for Plan-1 (`:shared:data` ledger). Re-enable + relocate to
+                // platform source sets in the meal-planning plan (later). MUST exclude xchart
+                // (Android-banned per smoke test 2026-05-17). Tracking: scaffold-fix-choco-solver.
+                // implementation(libs.choco.solver) {
+                //     exclude(group = "org.knowm.xchart")
+                // }
 
                 // Resilience
                 implementation(libs.resilience4j.circuitbreaker)
