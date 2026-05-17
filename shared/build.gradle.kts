@@ -96,7 +96,10 @@ kotlin {
             dependencies {
                 implementation(libs.junit.jupiter)
                 implementation(libs.robolectric)
+                implementation(libs.androidx.test.core)
                 implementation(libs.kotest.runner.junit5)
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.sqldelight.driver.android)
             }
         }
 
@@ -120,6 +123,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
