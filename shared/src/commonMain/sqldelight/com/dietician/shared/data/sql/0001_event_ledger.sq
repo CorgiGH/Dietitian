@@ -15,6 +15,8 @@ CREATE TABLE pantry_events (
 CREATE INDEX idx_pantry_events_sku ON pantry_events(sku_uuid);
 CREATE INDEX idx_pantry_events_originated ON pantry_events(originated_at);
 CREATE INDEX idx_pantry_events_unsynced ON pantry_events(synced_at) WHERE synced_at IS NULL;
+-- Council #1 fix #3: cursor sort key (originated_at, event_uuid) — matches selectPantryEventsSince.
+CREATE INDEX idx_pantry_events_cursor ON pantry_events(originated_at, event_uuid);
 
 CREATE TABLE meal_events (
     event_uuid       TEXT PRIMARY KEY NOT NULL,
@@ -29,6 +31,9 @@ CREATE TABLE meal_events (
     rating_1_5       INTEGER,
     notes            TEXT
 );
+-- Council #1 fix #3: cursor + unsynced indexes (parity with pantry).
+CREATE INDEX idx_meal_events_cursor ON meal_events(originated_at, event_uuid);
+CREATE INDEX idx_meal_events_unsynced ON meal_events(synced_at) WHERE synced_at IS NULL;
 
 CREATE TABLE weight_events (
     event_uuid    TEXT PRIMARY KEY NOT NULL,
@@ -39,6 +44,9 @@ CREATE TABLE weight_events (
     time_of_day   TEXT,
     conditions    TEXT
 );
+-- Council #1 fix #3: cursor + unsynced indexes (parity with pantry).
+CREATE INDEX idx_weight_events_cursor ON weight_events(originated_at, event_uuid);
+CREATE INDEX idx_weight_events_unsynced ON weight_events(synced_at) WHERE synced_at IS NULL;
 
 CREATE TABLE receipt_events (
     event_uuid       TEXT PRIMARY KEY NOT NULL,
@@ -52,6 +60,9 @@ CREATE TABLE receipt_events (
     ocr_provider     TEXT,
     line_items_json  TEXT
 );
+-- Council #1 fix #3: cursor + unsynced indexes (parity with pantry).
+CREATE INDEX idx_receipt_events_cursor ON receipt_events(originated_at, event_uuid);
+CREATE INDEX idx_receipt_events_unsynced ON receipt_events(synced_at) WHERE synced_at IS NULL;
 
 insertPantryEvent:
 INSERT INTO pantry_events(event_uuid, device_id, originated_at, synced_at, sku_uuid, delta_qty, unit, reason, evidence_ref)
