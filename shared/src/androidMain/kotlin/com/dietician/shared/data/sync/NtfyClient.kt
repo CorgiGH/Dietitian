@@ -1,5 +1,6 @@
 package com.dietician.shared.data.sync
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,7 +31,10 @@ class NtfyClient(
         job =
             scope.launch {
                 while (isActive) {
-                    runCatching {
+                    // Council #3: runCatching swallows CancellationException -> the listener
+                    // becomes unkillable from its parent scope. Explicit try/catch with
+                    // re-throw on CancellationException.
+                    try {
                         val req = Request.Builder().url(ntfyUrl).build()
                         client.newCall(req).execute().use { resp ->
                             val src = resp.body!!.source()
@@ -39,6 +43,9 @@ class NtfyClient(
                                 if (line.startsWith("data:")) onTrigger()
                             }
                         }
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        // Swallow other errors; reconnect after backoff.
                     }
                     delay(5_000) // reconnect backoff
                 }
