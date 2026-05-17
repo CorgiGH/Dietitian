@@ -22,14 +22,19 @@ import org.robolectric.annotation.SQLiteMode
  * NOTE on the assertion scope: Robolectric's host-side SQLite (via AndroidSqliteDriver)
  * does not perfectly replicate Android's on-device WAL filesystem semantics. We therefore
  * assert "data preserved across reopen" rather than "the -wal file actually shrunk", which
- * would require a real-device FS to observe reliably.
+ * would require a real-device FS to observe reliably. See WalCheckpointTest for a
+ * best-effort wal-file-size assertion guarded by `Assume.assumeTrue(walFile.exists())`.
+ *
+ * Council #3 follow-up: the original test method was named "releases -wal file" but only
+ * asserted data persistence. Renamed to match the actual assertion. Wal-file-size assertion
+ * lives in WalCheckpointTest where it belongs.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28]) // matches min-sdk=26 era; Doze behaviors first appear on API 23+, well-formed on 28.
 @SQLiteMode(SQLiteMode.Mode.NATIVE) // Legacy shadow rejects `PRAGMA journal_mode=WAL` via execute(); NATIVE honors it.
 class WalDozeChaosTest {
     @Test
-    fun `WAL truncating checkpoint after simulated Doze releases -wal file`() {
+    fun `data persists across simulated Doze kill and reopen with truncating checkpoint`() {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
         val driver = AndroidSqliteDriver(DieticianDatabase.Schema, ctx, "doze-test.db")
         WalPragmas.applyAll(driver)
