@@ -775,8 +775,14 @@ POST /sync/push
   resp: { accepted: [event_uuid], rejected: [{event_uuid, reason}] }
 
 POST /sync/pull
-  body: { device_id, since: { table: timestamptz } }
-  resp: { events: { table: [rows] }, server_time: timestamptz }
+  body: { device_id, cursors: { table_name: { timestampMs: Long, eventUuid: String } } }
+  resp: { rows: [{ table_name, event_uuid, originated_at_ms, payload_json, server_recv_at }], server_time_ms: Long }
+  # Council #1 BREAK #3 fix (post-impl council #2 amendment): the cursor is a
+  # (timestampMs, eventUuid) tuple rather than a bare `timestamptz`. Half-open
+  # `> cursor` semantics with the uuid tiebreaker guarantee no row is served
+  # twice and no row is dropped when multiple events share an originated_at_ms
+  # millisecond. See PullCursorPropertyTest for the property proof and
+  # api/Cursor.kt for the canonical Kotlin shape.
 
 POST /receipts/upload
   multipart: image

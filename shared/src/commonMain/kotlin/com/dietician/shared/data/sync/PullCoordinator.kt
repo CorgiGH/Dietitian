@@ -9,19 +9,23 @@ import com.dietician.shared.data.local.CacheMetaStore
 import com.dietician.shared.data.local.SyncLogStore
 import com.dietician.shared.data.remote.SyncClient
 import com.dietician.shared.data.sql.DieticianDatabase
+import kotlinx.coroutines.CancellationException
 
 /**
  * Drives /sync/pull. Reads per-table cursors, batches a single pull, applies rows to local
- * caches inside a transaction, advances cursors using max (originatedAt, eventUuid) per table.
+ * caches inside a transaction, and advances cursors using max (originatedAt, eventUuid) of
+ * the rows that successfully applied, per table.
  *
  * Council BREAK #3: cursor uses strict `>` (timestamp, eventUuid) half-open windowing. The
  * PullCursorPropertyTest property holds because the cursor is a totally-ordered tuple and
- * every batch's last row becomes the next cursor; no row can be served twice.
+ * every batch's last applied row becomes the next cursor; no row can be served twice.
  *
- * applyPulledRow is intentionally STUBBED for Plan-1. The plan's own File Structure note
- * marks this as an open stub: per-table JSON->DTO->insert-or-ignore routing is hand-written
- * here in real-impl; Plan-7 may codegen it. Plan-1's deliverable is the cursor/transactional
- * scaffold + property proof; the row-application body is wired in a subsequent plan.
+ * Council #2 fix (cursor-advance guard): cursors are now advanced ONLY for rows that
+ * applyPulledRow returned `true` for. Plan-1 ships applyPulledRow as an explicit no-op
+ * returning `false`, so cursors will STALL until Plan-3 wires per-table UPSERT routing.
+ * This is intentional: a stalled cursor causes the same rows to be re-fetched next pull
+ * (idempotent), whereas advancing past unapplied rows silently discards them — the council's
+ * "silent data loss" objection. Better stall than drop.
  */
 class PullCoordinator(
     private val db: DieticianDatabase,
@@ -46,19 +50,29 @@ class PullCoordinator(
             try {
                 client.pull(PullRequest(deviceId(), cursors))
             } catch (e: Throwable) {
+                if (e is CancellationException) throw e
                 val end = clock.nowMillis()
                 syncLog.recordPullCompleted(triggerLogId, start, end, 0, e.message ?: e::class.simpleName ?: "unknown")
                 return PullResult.Failure(e)
             }
 
         db.transaction {
+            // Track per-table "max applied" cursor so we only advance past rows we actually
+            // committed to local caches. Rows where applyPulledRow returns false (the Plan-1
+            // stub default) do NOT contribute to the cursor and will be re-pulled next tick.
+            val maxAppliedPerTable = mutableMapOf<String, Cursor>()
             for (row in resp.rows) {
-                applyPulledRow(row.tableName, row.eventUuid, row.payloadJson, row.serverRecvAt)
+                val applied = applyPulledRow(row.tableName, row.eventUuid, row.payloadJson, row.serverRecvAt)
+                if (applied) {
+                    val rowCursor = Cursor(row.originatedAtMs, row.eventUuid)
+                    val current = maxAppliedPerTable[row.tableName]
+                    if (current == null || rowCursor > current) {
+                        maxAppliedPerTable[row.tableName] = rowCursor
+                    }
+                }
             }
-            // Advance cursor per table using max (ts, uuid) per table seen.
-            resp.rows.groupBy { it.tableName }.forEach { (table, rows) ->
-                val last = rows.maxByOrNull { Cursor(it.originatedAtMs, it.eventUuid) }!!
-                cacheMeta.advanceCursor(table, Cursor(last.originatedAtMs, last.eventUuid))
+            maxAppliedPerTable.forEach { (table, cursor) ->
+                cacheMeta.advanceCursor(table, cursor)
             }
         }
 
@@ -67,15 +81,28 @@ class PullCoordinator(
         return PullResult.Success(resp.rows.size)
     }
 
+    /**
+     * Stub — Plan-3 wires per-table UPSERT routing (JSON -> typed DTO -> INSERT OR REPLACE
+     * into the appropriate cache table). Returning `false` here means cursors freeze until
+     * Plan-3 lands. This is intentional: better stall (re-pull next tick) than silent data
+     * loss (advance cursor past rows we never wrote).
+     *
+     * @return `true` iff the row was successfully written to a local cache and the cursor
+     *   may advance past it.
+     */
+    @Suppress("UnusedPrivateMember", "FunctionOnlyReturningConstant")
     private fun applyPulledRow(
         table: String,
         uuid: String,
         payload: String,
         serverRecvAt: Long,
-    ) {
+    ): Boolean {
         // STUB per plan note "the only intentional stub in Plan-1". Per-table JSON -> DTO ->
-        // insert-or-ignore routing is wired in a subsequent plan; Plan-1's contract is the
-        // cursor/transactional scaffold + property proof above.
+        // INSERT OR REPLACE routing is wired in Plan-3; Plan-1's contract is the
+        // cursor/transactional scaffold + property proof. Explicit `false` (vs the prior
+        // implicit no-op + unconditional advance) guards the cursor against advancing past
+        // rows we did not commit — council #2 BREAK.
+        return false
     }
 
     sealed interface PullResult {
