@@ -10,11 +10,12 @@ class PullTriggerTest {
     @Test
     fun `200ms debounce coalesces a burst into one tick`() =
         runTest {
-            val coalescer = PullTriggerCoalescer(debounceMs = 200, scope = this)
+            // `backgroundScope` (kotlinx-coroutines-test idiom): the coalescer's internal
+            // debounce-collector AND the outer subscriber both never complete on their own,
+            // so they must live on `backgroundScope` (auto-cancelled at test end) — otherwise
+            // `runTest` reports `UncompletedCoroutinesError`.
+            val coalescer = PullTriggerCoalescer(debounceMs = 200, scope = backgroundScope)
             val emissions = mutableListOf<PullTrigger>()
-            // `backgroundScope` (kotlinx-coroutines-test idiom): SharedFlow collectors never
-            // complete, so they must NOT live on the test scope or `runTest` reports
-            // `UncompletedCoroutinesError`. backgroundScope is auto-cancelled at test end.
             backgroundScope.launch { coalescer.coalesced().collect { emissions.add(it) } }
 
             coalescer.push(PullTrigger.Ws)
