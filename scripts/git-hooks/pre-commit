@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Plan-1 pre-commit hook — opportunistic local checks before push.
+# CI (.github/workflows/) is the ultimate gate. This is a courtesy fast-path
+# so obvious break-the-build commits don't reach origin.
+set -euo pipefail
+./gradlew --quiet ktlintFormat detekt :shared:desktopTest :server:test --tests "*SchemaParity*"
