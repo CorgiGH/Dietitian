@@ -99,6 +99,15 @@ kotlin {
                 implementation(libs.kotest.runner.junit5)
             }
         }
+
+        val desktopTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.sqldelight.driver.sqlite)
+            }
+        }
     }
 }
 
