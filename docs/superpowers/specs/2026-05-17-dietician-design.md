@@ -415,7 +415,15 @@ CREATE TABLE llm_calls (
 );
 ```
 
-> **Errata 2026-05-17:** Spec originally proposed "reduce MC heap 4G→3G + install earlyoom --prefer minecraft" to free RAM headroom for Dietician services. **User vetoed mid-execution.** MC stays at 4G original config. Dietician footprint (~860MB) must fit within original 2.4GB headroom (= ~1.5GB buffer). earlyoom still installed but configured with `--avoid` for MC/Postgres/Dietician + `--prefer` for trading-bot/study-proxy ONLY (no MC pref). See [[feedback-dont-touch-mc]].
+> **Errata 2026-05-17 #1 — MC heap NOT reduced.** Spec originally proposed reducing MC heap 4G→3G. User vetoed mid-execution. MC stays at 4G original config. See [[feedback-dont-touch-mc]].
+>
+> **Errata 2026-05-17 #2 — GROBID MOVED TO DESKTOP.** With MC at 4G (not reduced), GROBID's 1.5GB peak resident eats too much VPS headroom. User chose to relocate GROBID to desktop. Effects:
+> - GROBID Docker NOT installed on VPS. ntfy stays.
+> - Desktop requires Docker Desktop install (~2GB on Windows) before paper-fetch pipeline works. Documented as user task.
+> - Paper ingestion gated on desktop being online (queue via `pending_jobs` table on VPS Postgres; desktop polls and processes).
+> - VPS footprint reduced from ~860MB to ~460MB (Postgres 200 + Ktor 250 + ntfy 10). Leaves ~1.9GB buffer.
+> - earlyoom NOT installed (no longer needed since headroom is comfortable).
+> - Runbook 4 (grobid-hung) updated to reflect desktop-side location.
 
 ### 4.4 Knowledge corpus tables (~15 per research pass 1)
 
