@@ -66,10 +66,13 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(libs.junit.platform.launcher)
     testImplementation(libs.kotest.assertions.core)
+    // SchemaParityTest (T11): instantiate SQLDelight schema in-memory on the JVM
+    testImplementation(libs.sqldelight.driver.sqlite)
 }
 
 tasks.test {

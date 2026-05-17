@@ -1,0 +1,44 @@
+{
+  "type_aliases": {
+    "UUID": "TEXT",
+    "TIMESTAMP WITH TIME ZONE": "INTEGER",
+    "TIMESTAMPTZ": "INTEGER",
+    "DATE": "TEXT",
+    "JSONB": "TEXT",
+    "BOOLEAN": "INTEGER",
+    "BIGSERIAL": "INTEGER PRIMARY KEY AUTOINCREMENT",
+    "BIGINT": "INTEGER",
+    "VECTOR": "BLOB",
+    "CHAR": "TEXT"
+  },
+  "skipped_columns": [
+    {"table": "pantry_events", "column": "synced_at", "reason": "client-side SQLite uses NULL-as-pending; Postgres always-set"},
+    {"table": "meal_events", "column": "synced_at", "reason": "see above"},
+    {"table": "weight_events", "column": "synced_at", "reason": "see above"},
+    {"table": "receipt_events", "column": "synced_at", "reason": "see above"}
+  ],
+  "client_only_tables": [
+    "outbox", "outbox_dead", "pantry_snapshot", "pantry_snapshot_checkpoint",
+    "sync_cursor_per_table", "sync_log", "hlc_state",
+    "sku_canonical_cache", "price_posterior_cache", "food_composition_cache",
+    "nutrient_dri_cache", "food_safety_temps_cache", "substitution_rules_cache",
+    "cooking_methods_cache", "glycemic_index_cache", "recipes_cache",
+    "stores_cache", "user_location_state_cache", "boredom_rolling_cache",
+    "meal_plans_cache", "shopping_lists_cache", "loss_leader_alerts_cache"
+  ],
+  "server_only_tables": [
+    "sku_match_queue", "promo_observations", "model_price_table", "llm_calls",
+    "local_nutrition", "local_nutrition_pending", "protein_quality",
+    "food_storage_open", "drug_food_interactions", "deficiency_symptoms",
+    "recipe_ingredients", "recipe_steps", "recipe_ratings", "boredom_rolling",
+    "adherence", "meal_plans", "shopping_lists", "loss_leader_alerts",
+    "pending_jobs", "device_heartbeat", "credential_heartbeat",
+    "receipt_review_queue", "flyer_review_queue", "vision_anomaly_queue",
+    "outbox_dead_vps", "sync_log_vps", "stores", "user_location_state",
+    "sku_canonical", "sku_source_id", "receipt_aliases",
+    "price_observations", "price_posterior", "budgets", "llm_budget",
+    "food_composition", "nutrient_dri", "food_safety_temps",
+    "substitution_rules", "cooking_methods", "glycemic_index",
+    "recipes", "user_location_current"
+  ]
+}
