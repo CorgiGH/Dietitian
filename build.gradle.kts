@@ -10,6 +10,8 @@ plugins {
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.sqldelight) apply false
     alias(libs.plugins.ktor) apply false
+    alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.detekt) apply false
 }
 
 allprojects {
@@ -18,4 +20,9 @@ allprojects {
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
+}
+
+subprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "io.gitlab.arturbosch.detekt")
 }

@@ -39,6 +39,10 @@ dependencies {
     implementation(libs.postgresql.jdbc)
     implementation(libs.hikari)
 
+    // Flyway migrations
+    implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.slf4j)
@@ -62,6 +66,10 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.testcontainers.junit.jupiter)
+    testImplementation(libs.junit.platform.launcher)
+    testImplementation(libs.kotest.assertions.core)
 }
 
 tasks.test {

@@ -70,6 +70,8 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.turbine)
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.kotest.property)
             }
         }
 
@@ -78,6 +80,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.android)
                 implementation(libs.ktor.client.okhttp)
                 implementation(libs.sqldelight.driver.android)
+                implementation(libs.androidx.lifecycle.process)
             }
         }
 
@@ -86,6 +89,14 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.sqldelight.driver.sqlite)
                 implementation(libs.onnxruntime)
+            }
+        }
+
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.junit.jupiter)
+                implementation(libs.robolectric)
+                implementation(libs.kotest.runner.junit5)
             }
         }
     }
