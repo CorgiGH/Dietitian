@@ -1,0 +1,58 @@
+-- Per-table pull cursors (timestamp + uuid tiebreak per council BREAK #3)
+-- and sync_log per council BREAK #7.
+--
+-- UPSERT (ON CONFLICT) requires SQLite >= 3.24; android-min=26 ships 3.18.
+-- Portable cursor upsert: cursorSeedIfAbsent (sentinel zeros) + cursorAdvance (UPDATE).
+-- Caller wraps in db.transaction.
+
+CREATE TABLE sync_cursor_per_table (
+    table_name      TEXT PRIMARY KEY NOT NULL,
+    last_ts         INTEGER NOT NULL DEFAULT 0,
+    last_event_uuid TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE sync_log (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    trigger_source    TEXT NOT NULL,        -- 'ws' | 'ntfy' | 'manual' | 'periodic'
+    fired_at          INTEGER NOT NULL,
+    debounced_to      INTEGER,
+    pull_started_at   INTEGER,
+    pull_ended_at     INTEGER,
+    events_pulled     INTEGER,
+    error             TEXT,
+    reported_at       INTEGER               -- NULL = not yet relayed to VPS
+);
+CREATE INDEX idx_sync_log_fired_at ON sync_log(fired_at DESC);
+CREATE INDEX idx_sync_log_unreported ON sync_log(reported_at) WHERE reported_at IS NULL;
+
+cursorFor:
+SELECT last_ts, last_event_uuid FROM sync_cursor_per_table WHERE table_name = ?;
+
+cursorSeedIfAbsent:
+INSERT OR IGNORE INTO sync_cursor_per_table(table_name, last_ts, last_event_uuid)
+VALUES (?, 0, '');
+
+cursorAdvance:
+UPDATE sync_cursor_per_table SET last_ts = ?, last_event_uuid = ? WHERE table_name = ?;
+
+insertSyncLog:
+INSERT INTO sync_log(trigger_source, fired_at, debounced_to, pull_started_at, pull_ended_at, events_pulled, error, reported_at)
+VALUES (?, ?, NULL, NULL, NULL, NULL, NULL, NULL);
+
+selectLastSyncLogId:
+SELECT last_insert_rowid();
+
+updateSyncLogDebounced:
+UPDATE sync_log SET debounced_to = ? WHERE id = ?;
+
+updateSyncLogPullBoundaries:
+UPDATE sync_log SET pull_started_at = ?, pull_ended_at = ?, events_pulled = ?, error = ? WHERE id = ?;
+
+selectRecentSyncLog:
+SELECT * FROM sync_log ORDER BY fired_at DESC LIMIT ?;
+
+selectUnreportedSyncLog:
+SELECT * FROM sync_log WHERE reported_at IS NULL;
+
+markSyncLogReported:
+UPDATE sync_log SET reported_at = ? WHERE id = ?;
