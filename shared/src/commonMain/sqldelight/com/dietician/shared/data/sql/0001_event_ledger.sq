@@ -1,0 +1,92 @@
+-- Per-client SQLite event tables. Mirrors spec §3 Postgres canonical with SQLite types:
+-- UUID → TEXT, TIMESTAMPTZ → INTEGER (epoch millis), JSONB → TEXT (JSON string).
+
+CREATE TABLE pantry_events (
+    event_uuid     TEXT PRIMARY KEY NOT NULL,
+    device_id      TEXT NOT NULL,
+    originated_at  INTEGER NOT NULL,
+    synced_at      INTEGER,
+    sku_uuid       TEXT NOT NULL,
+    delta_qty      REAL NOT NULL,
+    unit           TEXT NOT NULL,
+    reason         TEXT,
+    evidence_ref   TEXT
+);
+CREATE INDEX idx_pantry_events_sku ON pantry_events(sku_uuid);
+CREATE INDEX idx_pantry_events_originated ON pantry_events(originated_at);
+CREATE INDEX idx_pantry_events_unsynced ON pantry_events(synced_at) WHERE synced_at IS NULL;
+
+CREATE TABLE meal_events (
+    event_uuid       TEXT PRIMARY KEY NOT NULL,
+    device_id        TEXT NOT NULL,
+    originated_at    INTEGER NOT NULL,
+    synced_at        INTEGER,
+    meal_label       TEXT NOT NULL,
+    recipe_id        TEXT,
+    ingredients_json TEXT NOT NULL,
+    kcal_actual      REAL,
+    protein_actual   REAL,
+    rating_1_5       INTEGER,
+    notes            TEXT
+);
+
+CREATE TABLE weight_events (
+    event_uuid    TEXT PRIMARY KEY NOT NULL,
+    device_id     TEXT NOT NULL,
+    originated_at INTEGER NOT NULL,
+    synced_at     INTEGER,
+    weight_kg     REAL NOT NULL,
+    time_of_day   TEXT,
+    conditions    TEXT
+);
+
+CREATE TABLE receipt_events (
+    event_uuid       TEXT PRIMARY KEY NOT NULL,
+    device_id        TEXT NOT NULL,
+    originated_at    INTEGER NOT NULL,
+    synced_at        INTEGER,
+    store_id         TEXT NOT NULL,
+    total_lei        REAL,
+    image_ref        TEXT NOT NULL,
+    ocr_status       TEXT NOT NULL,
+    ocr_provider     TEXT,
+    line_items_json  TEXT
+);
+
+insertPantryEvent:
+INSERT INTO pantry_events(event_uuid, device_id, originated_at, synced_at, sku_uuid, delta_qty, unit, reason, evidence_ref)
+VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?);
+
+insertMealEvent:
+INSERT INTO meal_events(event_uuid, device_id, originated_at, synced_at, meal_label, recipe_id, ingredients_json, kcal_actual, protein_actual, rating_1_5, notes)
+VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?);
+
+insertWeightEvent:
+INSERT INTO weight_events(event_uuid, device_id, originated_at, synced_at, weight_kg, time_of_day, conditions)
+VALUES (?, ?, ?, NULL, ?, ?, ?);
+
+insertReceiptEvent:
+INSERT INTO receipt_events(event_uuid, device_id, originated_at, synced_at, store_id, total_lei, image_ref, ocr_status, ocr_provider, line_items_json)
+VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?);
+
+markPantryEventSynced:
+UPDATE pantry_events SET synced_at = ? WHERE event_uuid = ?;
+
+markMealEventSynced:
+UPDATE meal_events SET synced_at = ? WHERE event_uuid = ?;
+
+markWeightEventSynced:
+UPDATE weight_events SET synced_at = ? WHERE event_uuid = ?;
+
+markReceiptEventSynced:
+UPDATE receipt_events SET synced_at = ? WHERE event_uuid = ?;
+
+selectPantryEvent:
+SELECT * FROM pantry_events WHERE event_uuid = ?;
+
+selectPantryEventsSince:
+SELECT * FROM pantry_events
+WHERE (originated_at > :sinceTs)
+   OR (originated_at = :sinceTs AND event_uuid > :sinceUuid)
+ORDER BY originated_at ASC, event_uuid ASC
+LIMIT :limit;
