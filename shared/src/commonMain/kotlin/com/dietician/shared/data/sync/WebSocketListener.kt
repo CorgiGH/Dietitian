@@ -19,23 +19,27 @@ class WebSocketListener(
 
     fun start(scope: CoroutineScope) {
         job?.cancel()
-        job = scope.launch {
-            while (isActive(scope)) {
-                runCatching {
-                    http.webSocket(wsUrl) {
-                        for (frame in incoming) {
-                            if (frame is Frame.Text && frame.readText().contains("\"new_events\"")) {
-                                onTrigger()
+        job =
+            scope.launch {
+                while (isActive(scope)) {
+                    runCatching {
+                        http.webSocket(wsUrl) {
+                            for (frame in incoming) {
+                                if (frame is Frame.Text && frame.readText().contains("\"new_events\"")) {
+                                    onTrigger()
+                                }
                             }
                         }
                     }
+                    kotlinx.coroutines.delay(2_000) // reconnect backoff (will be replaced by RetryPolicy in Plan-3)
                 }
-                kotlinx.coroutines.delay(2_000) // reconnect backoff (will be replaced by RetryPolicy in Plan-3)
             }
-        }
     }
 
-    fun stop() { job?.cancel(); job = null }
+    fun stop() {
+        job?.cancel()
+        job = null
+    }
 
     private fun isActive(scope: CoroutineScope): Boolean = scope.coroutineContext[Job]?.isActive == true
 }

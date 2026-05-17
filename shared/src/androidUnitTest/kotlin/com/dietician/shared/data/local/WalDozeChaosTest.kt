@@ -38,14 +38,14 @@ class WalDozeChaosTest {
         // Burst-insert 1000 events to grow the -wal file before the simulated kill.
         repeat(1_000) { i ->
             db.`0001_event_ledgerQueries`.insertPantryEvent(
-                "u-$i",        // event_uuid
-                "test",        // device_id
-                i.toLong(),    // originated_at
-                "sku",         // sku_uuid
-                1.0,           // delta_qty
-                "g",           // unit
-                null,          // reason
-                null,          // evidence_ref
+                event_uuid = "u-$i",
+                device_id = "test",
+                originated_at = i.toLong(),
+                sku_uuid = "sku",
+                delta_qty = 1.0,
+                unit = "g",
+                reason = null,
+                evidence_ref = null,
             )
         }
 

@@ -22,6 +22,7 @@ import java.sql.DriverManager
  */
 
 data class ColumnDef(val name: String, val typeNormalized: String, val nullable: Boolean)
+
 data class TableSchema(val name: String, val columns: List<ColumnDef>)
 
 data class AllowList(
@@ -30,31 +31,38 @@ data class AllowList(
     val clientOnly: Set<String>,
     val serverOnly: Set<String>,
 )
+
 data class SkippedCol(val table: String, val column: String)
 
 /**
  * Introspect Postgres via `information_schema.columns` (public schema only).
  * `data_type` is upper-cased for symmetric comparison with the SQLite side.
  */
-fun dumpPgSchema(jdbcUrl: String, user: String, password: String): Map<String, TableSchema> {
+fun dumpPgSchema(
+    jdbcUrl: String,
+    user: String,
+    password: String,
+): Map<String, TableSchema> {
     val out = mutableMapOf<String, TableSchema>()
     DriverManager.getConnection(jdbcUrl, user, password).use { conn ->
-        val rs = conn.createStatement().executeQuery(
-            """
-            SELECT table_name, column_name, data_type, is_nullable
-            FROM information_schema.columns
-            WHERE table_schema = 'public'
-            ORDER BY table_name, ordinal_position
-            """.trimIndent()
-        )
+        val rs =
+            conn.createStatement().executeQuery(
+                """
+                SELECT table_name, column_name, data_type, is_nullable
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                ORDER BY table_name, ordinal_position
+                """.trimIndent(),
+            )
         val grouped = mutableMapOf<String, MutableList<ColumnDef>>()
         while (rs.next()) {
             val t = rs.getString("table_name")
-            grouped.getOrPut(t) { mutableListOf() } += ColumnDef(
-                name = rs.getString("column_name"),
-                typeNormalized = rs.getString("data_type").uppercase(),
-                nullable = rs.getString("is_nullable") == "YES",
-            )
+            grouped.getOrPut(t) { mutableListOf() } +=
+                ColumnDef(
+                    name = rs.getString("column_name"),
+                    typeNormalized = rs.getString("data_type").uppercase(),
+                    nullable = rs.getString("is_nullable") == "YES",
+                )
         }
         grouped.forEach { (t, cols) -> out[t] = TableSchema(t, cols) }
     }
@@ -75,40 +83,43 @@ fun dumpSqldelightSchema(): Map<String, TableSchema> {
     try {
         DieticianDatabase.Schema.create(driver)
 
-        val tables = driver.executeQuery(
-            identifier = null,
-            sql = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
-            mapper = { cursor ->
-                val names = mutableListOf<String>()
-                while (cursor.next().value) {
-                    names += cursor.getString(0)!!
-                }
-                QueryResult.Value(names)
-            },
-            parameters = 0,
-        ).value
-
-        return tables.associateWith { t ->
-            val cols = driver.executeQuery(
+        val tables =
+            driver.executeQuery(
                 identifier = null,
-                // PRAGMA params are not bindable; `t` came from sqlite_master so it's trusted,
-                // but quote-escape defensively to harden against any future identifier oddities.
-                sql = "PRAGMA table_info(\"${t.replace("\"", "\"\"")}\")",
+                sql = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
                 mapper = { cursor ->
-                    val cols = mutableListOf<ColumnDef>()
+                    val names = mutableListOf<String>()
                     while (cursor.next().value) {
-                        cols += ColumnDef(
-                            name = cursor.getString(1)!!,
-                            typeNormalized = (cursor.getString(2) ?: "").uppercase(),
-                            // column 3 = `notnull`; 0 means nullable.
-                            // Use !! to fail loud if SQLite ever changes PRAGMA table_info shape.
-                            nullable = cursor.getLong(3)!! == 0L,
-                        )
+                        names += cursor.getString(0)!!
                     }
-                    QueryResult.Value(cols)
+                    QueryResult.Value(names)
                 },
                 parameters = 0,
             ).value
+
+        return tables.associateWith { t ->
+            val cols =
+                driver.executeQuery(
+                    identifier = null,
+                    // PRAGMA params are not bindable; `t` came from sqlite_master so it's trusted,
+                    // but quote-escape defensively to harden against any future identifier oddities.
+                    sql = "PRAGMA table_info(\"${t.replace("\"", "\"\"")}\")",
+                    mapper = { cursor ->
+                        val cols = mutableListOf<ColumnDef>()
+                        while (cursor.next().value) {
+                            cols +=
+                                ColumnDef(
+                                    name = cursor.getString(1)!!,
+                                    typeNormalized = (cursor.getString(2) ?: "").uppercase(),
+                                    // column 3 = `notnull`; 0 means nullable.
+                                    // Use !! to fail loud if SQLite ever changes PRAGMA table_info shape.
+                                    nullable = cursor.getLong(3)!! == 0L,
+                                )
+                        }
+                        QueryResult.Value(cols)
+                    },
+                    parameters = 0,
+                ).value
             TableSchema(t, cols)
         }
     } finally {
@@ -117,17 +128,20 @@ fun dumpSqldelightSchema(): Map<String, TableSchema> {
 }
 
 fun loadAllowList(): AllowList {
-    val stream = (
-        Thread.currentThread().contextClassLoader
-            ?: ClassLoader.getSystemClassLoader()
-        ).getResourceAsStream("schema-parity/allow-list.json")
-        ?: error("schema-parity/allow-list.json not found on test classpath")
+    val stream =
+        (
+            Thread.currentThread().contextClassLoader
+                ?: ClassLoader.getSystemClassLoader()
+            ).getResourceAsStream("schema-parity/allow-list.json")
+            ?: error("schema-parity/allow-list.json not found on test classpath")
     val text = stream.use { it.bufferedReader().readText() }
     val root = Json.parseToJsonElement(text).jsonObject
     return AllowList(
-        typeAliases = (root["type_aliases"] ?: error("allow-list.json missing 'type_aliases'"))
+        typeAliases =
+        (root["type_aliases"] ?: error("allow-list.json missing 'type_aliases'"))
             .jsonObject.mapValues { it.value.jsonPrimitive.content },
-        skipped = (root["skipped_columns"] ?: error("allow-list.json missing 'skipped_columns'"))
+        skipped =
+        (root["skipped_columns"] ?: error("allow-list.json missing 'skipped_columns'"))
             .jsonArray.map {
                 val o = it.jsonObject
                 SkippedCol(
@@ -135,13 +149,19 @@ fun loadAllowList(): AllowList {
                     (o["column"] ?: error("skipped_columns entry missing 'column'")).jsonPrimitive.content,
                 )
             }.toSet(),
-        clientOnly = (root["client_only_tables"] ?: error("allow-list.json missing 'client_only_tables'"))
+        clientOnly =
+        (root["client_only_tables"] ?: error("allow-list.json missing 'client_only_tables'"))
             .jsonArray.map { it.jsonPrimitive.content }.toSet(),
-        serverOnly = (root["server_only_tables"] ?: error("allow-list.json missing 'server_only_tables'"))
+        serverOnly =
+        (root["server_only_tables"] ?: error("allow-list.json missing 'server_only_tables'"))
             .jsonArray.map { it.jsonPrimitive.content }.toSet(),
     )
 }
 
+// Schema-parity comparison is an intrinsically branchy fan-out (table × col ×
+// null-checks × type-alias resolution). Refactoring the early-exits into
+// nested `if` chains hurts readability more than helps it.
+@Suppress("LoopWithTooManyJumpStatements")
 fun compareSchemas(
     pg: Map<String, TableSchema>,
     sl: Map<String, TableSchema>,
@@ -158,8 +178,14 @@ fun compareSchemas(
     for (t in sharedTables.sorted()) {
         val pgT = pg[t]
         val slT = sl[t]
-        if (pgT == null) { violations += "Table $t in SQLDelight but missing from Postgres"; continue }
-        if (slT == null) { violations += "Table $t in Postgres but missing from SQLDelight"; continue }
+        if (pgT == null) {
+            violations += "Table $t in SQLDelight but missing from Postgres"
+            continue
+        }
+        if (slT == null) {
+            violations += "Table $t in Postgres but missing from SQLDelight"
+            continue
+        }
         val pgCols = pgT.columns.associateBy { it.name }
         val slCols = slT.columns.associateBy { it.name }
         val allCols = (pgCols.keys + slCols.keys).sorted()
@@ -167,11 +193,18 @@ fun compareSchemas(
             if (SkippedCol(t, c) in allow.skipped) continue
             val p = pgCols[c]
             val s = slCols[c]
-            if (p == null) { violations += "$t.$c in SQLDelight but missing from Postgres"; continue }
-            if (s == null) { violations += "$t.$c in Postgres but missing from SQLDelight"; continue }
-            val pNorm = sortedAliases.fold(p.typeNormalized) { acc, (k, v) ->
-                if (acc.contains(k)) v else acc
+            if (p == null) {
+                violations += "$t.$c in SQLDelight but missing from Postgres"
+                continue
             }
+            if (s == null) {
+                violations += "$t.$c in Postgres but missing from SQLDelight"
+                continue
+            }
+            val pNorm =
+                sortedAliases.fold(p.typeNormalized) { acc, (k, v) ->
+                    if (acc.contains(k)) v else acc
+                }
             val sNorm = s.typeNormalized
             if (!typesEquivalent(pNorm, sNorm)) {
                 violations += "$t.$c type diff: pg=${p.typeNormalized}->$pNorm vs sqlite=$sNorm"
@@ -181,7 +214,10 @@ fun compareSchemas(
     return violations
 }
 
-private fun typesEquivalent(a: String, b: String): Boolean {
+private fun typesEquivalent(
+    a: String,
+    b: String,
+): Boolean {
     val canon = { s: String -> s.replace(" PRIMARY KEY AUTOINCREMENT", "").trim() }
     return canon(a) == canon(b)
 }

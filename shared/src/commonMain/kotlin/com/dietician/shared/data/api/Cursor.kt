@@ -9,6 +9,7 @@ data class Cursor(val timestampMs: Long, val eventUuid: String) : Comparable<Cur
         val t = timestampMs.compareTo(other.timestampMs)
         return if (t != 0) t else eventUuid.compareTo(other.eventUuid)
     }
+
     companion object {
         val ZERO = Cursor(0L, "")
     }

@@ -30,24 +30,26 @@ class PullCoordinator(
     private val syncLog: SyncLogStore,
     private val clock: WallClock,
 ) {
-    private val tables = listOf(
-        "pantry_events",
-        "meal_events",
-        "weight_events",
-        "receipt_events",
-        "pantry_metadata",
-    )
+    private val tables =
+        listOf(
+            "pantry_events",
+            "meal_events",
+            "weight_events",
+            "receipt_events",
+            "pantry_metadata",
+        )
 
     suspend fun pullOnce(triggerLogId: Long): PullResult {
         val start = clock.nowMillis()
         val cursors = tables.associateWith { cacheMeta.cursorFor(it) }
-        val resp: PullResponse = try {
-            client.pull(PullRequest(deviceId(), cursors))
-        } catch (e: Throwable) {
-            val end = clock.nowMillis()
-            syncLog.recordPullCompleted(triggerLogId, start, end, 0, e.message ?: e::class.simpleName ?: "unknown")
-            return PullResult.Failure(e)
-        }
+        val resp: PullResponse =
+            try {
+                client.pull(PullRequest(deviceId(), cursors))
+            } catch (e: Throwable) {
+                val end = clock.nowMillis()
+                syncLog.recordPullCompleted(triggerLogId, start, end, 0, e.message ?: e::class.simpleName ?: "unknown")
+                return PullResult.Failure(e)
+            }
 
         db.transaction {
             for (row in resp.rows) {
@@ -65,7 +67,12 @@ class PullCoordinator(
         return PullResult.Success(resp.rows.size)
     }
 
-    private fun applyPulledRow(table: String, uuid: String, payload: String, serverRecvAt: Long) {
+    private fun applyPulledRow(
+        table: String,
+        uuid: String,
+        payload: String,
+        serverRecvAt: Long,
+    ) {
         // STUB per plan note "the only intentional stub in Plan-1". Per-table JSON -> DTO ->
         // insert-or-ignore routing is wired in a subsequent plan; Plan-1's contract is the
         // cursor/transactional scaffold + property proof above.
@@ -73,6 +80,7 @@ class PullCoordinator(
 
     sealed interface PullResult {
         data class Success(val count: Int) : PullResult
+
         data class Failure(val cause: Throwable) : PullResult
     }
 }

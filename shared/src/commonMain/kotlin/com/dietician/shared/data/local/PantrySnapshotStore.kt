@@ -38,7 +38,6 @@ data class PantryCurrentRow(
  * use [currentAllOnce] / [currentForSku].
  */
 class PantrySnapshotStore(private val db: DieticianDatabase) {
-
     /**
      * Reactive view of every SKU with positive on-hand quantity, ordered most-recently-touched
      * first. Re-emits when `pantry_snapshot` is mutated (i.e. on every event-store write).

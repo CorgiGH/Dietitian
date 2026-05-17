@@ -7,8 +7,10 @@ package com.dietician.shared.data.metadata
  */
 data class HlcTimestamp(val wallMs: Long, val seq: Int, val deviceId: String) : Comparable<HlcTimestamp> {
     override fun compareTo(other: HlcTimestamp): Int {
-        val w = wallMs.compareTo(other.wallMs); if (w != 0) return w
-        val s = seq.compareTo(other.seq); if (s != 0) return s
+        val w = wallMs.compareTo(other.wallMs)
+        if (w != 0) return w
+        val s = seq.compareTo(other.seq)
+        if (s != 0) return s
         return deviceId.compareTo(other.deviceId)
     }
 }
@@ -55,16 +57,24 @@ class HybridLogicalClock(
     fun recv(remote: HlcTimestamp) {
         val w = wallNow()
         val newWall = maxOf(lastWall, remote.wallMs, w)
-        val newSeq = when {
-            newWall == lastWall && newWall == remote.wallMs -> maxOf(lastSeq, remote.seq)
-            newWall == lastWall -> lastSeq
-            newWall == remote.wallMs -> remote.seq
-            else -> 0
-        }
+        val newSeq =
+            when {
+                newWall == lastWall && newWall == remote.wallMs -> maxOf(lastSeq, remote.seq)
+                newWall == lastWall -> lastSeq
+                newWall == remote.wallMs -> remote.seq
+                else -> 0
+            }
         lastWall = newWall
         lastSeq = newSeq
     }
 
     fun snapshot(): Pair<Long, Int> = lastWall to lastSeq
-    fun restore(wall: Long, seq: Int) { lastWall = wall; lastSeq = seq }
+
+    fun restore(
+        wall: Long,
+        seq: Int,
+    ) {
+        lastWall = wall
+        lastSeq = seq
+    }
 }

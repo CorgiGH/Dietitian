@@ -1,6 +1,7 @@
 package com.dietician.server
 
 import com.dietician.shared.Dietician
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
@@ -11,7 +12,6 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
-import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.websocket.WebSockets
 
 /**
@@ -45,12 +45,14 @@ fun Application.module() {
 
     routing {
         get("/health") {
-            call.respond(mapOf(
-                "service" to "dietician-backend",
-                "version" to Dietician.VERSION,
-                "spec_date" to Dietician.SPEC_DATE,
-                "status" to "ok"
-            ))
+            call.respond(
+                mapOf(
+                    "service" to "dietician-backend",
+                    "version" to Dietician.VERSION,
+                    "spec_date" to Dietician.SPEC_DATE,
+                    "status" to "ok",
+                ),
+            )
         }
     }
 }

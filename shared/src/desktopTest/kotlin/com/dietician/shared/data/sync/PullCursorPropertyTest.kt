@@ -12,9 +12,17 @@ import kotlin.test.Test
 /** Simulated server: holds (originatedAt, uuid)-sorted rows; serves strictly `>` of cursor. */
 class FakeServer {
     data class Row(val ts: Long, val uuid: String, val table: String, val payload: String)
+
     val rows = sortedSetOf<Row>(compareBy({ it.ts }, { it.uuid }))
-    fun add(r: Row) { rows.add(r) }
-    fun pullSince(cursor: Cursor, limit: Int): List<Row> =
+
+    fun add(r: Row) {
+        rows.add(r)
+    }
+
+    fun pullSince(
+        cursor: Cursor,
+        limit: Int,
+    ): List<Row> =
         rows.asSequence()
             .filter { Cursor(it.ts, it.uuid) > cursor }
             .take(limit)

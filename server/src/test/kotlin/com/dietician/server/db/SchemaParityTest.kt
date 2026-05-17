@@ -49,9 +49,9 @@ class SchemaParityTest {
                     appendLine(
                         "If a violation is a legitimate client-vs-server split, add it to " +
                             "server/src/test/resources/schema-parity/allow-list.json with a justification. " +
-                            "Otherwise fix the offending Flyway .sql or SQLDelight .sq file."
+                            "Otherwise fix the offending Flyway .sql or SQLDelight .sq file.",
                     )
-                }
+                },
             )
         }
     }

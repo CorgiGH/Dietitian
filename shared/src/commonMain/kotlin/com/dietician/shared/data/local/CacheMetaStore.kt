@@ -16,7 +16,10 @@ class CacheMetaStore(private val db: DieticianDatabase) {
         return Cursor(row.last_ts, row.last_event_uuid)
     }
 
-    fun advanceCursor(tableName: String, c: Cursor) = db.transaction {
+    fun advanceCursor(
+        tableName: String,
+        c: Cursor,
+    ) = db.transaction {
         q.cursorSeedIfAbsent(tableName)
         q.cursorAdvance(c.timestampMs, c.eventUuid, tableName)
     }

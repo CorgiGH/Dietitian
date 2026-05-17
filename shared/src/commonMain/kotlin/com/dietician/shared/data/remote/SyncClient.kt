@@ -27,24 +27,32 @@ class SyncClient(
     private val http: HttpClient by lazy {
         httpFactory().config {
             install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true; encodeDefaults = true })
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        encodeDefaults = true
+                    },
+                )
             }
         }
     }
 
-    suspend fun push(req: PushRequest): PushResponse = http.post {
-        url("$baseUrl/sync/push")
-        contentType(ContentType.Application.Json)
-        setBody(req)
-    }.body()
+    suspend fun push(req: PushRequest): PushResponse =
+        http.post {
+            url("$baseUrl/sync/push")
+            contentType(ContentType.Application.Json)
+            setBody(req)
+        }.body()
 
-    suspend fun pull(req: PullRequest): PullResponse = http.post {
-        url("$baseUrl/sync/pull")
-        contentType(ContentType.Application.Json)
-        setBody(req)
-    }.body()
+    suspend fun pull(req: PullRequest): PullResponse =
+        http.post {
+            url("$baseUrl/sync/pull")
+            contentType(ContentType.Application.Json)
+            setBody(req)
+        }.body()
 
-    suspend fun health(): Boolean = runCatching {
-        http.get { url("$baseUrl/health") }
-    }.isSuccess
+    suspend fun health(): Boolean =
+        runCatching {
+            http.get { url("$baseUrl/health") }
+        }.isSuccess
 }

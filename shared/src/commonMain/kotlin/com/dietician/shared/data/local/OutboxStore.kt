@@ -32,13 +32,16 @@ class OutboxStore(private val db: DieticianDatabase) {
      * Marks the underlying event row as `synced_at = serverRecvAt` and removes the outbox row.
      * No-op if the outbox row has already been drained (idempotent re-ack from the server).
      */
-    fun markSynced(eventUuid: String, serverRecvAt: Long) {
+    fun markSynced(
+        eventUuid: String,
+        serverRecvAt: Long,
+    ) {
         db.transaction {
             val row = outbox.selectOutboxRow(eventUuid).executeAsOneOrNull() ?: return@transaction
             when (row.table_name) {
-                "pantry_events"  -> ledger.markPantryEventSynced(serverRecvAt, eventUuid)
-                "meal_events"    -> ledger.markMealEventSynced(serverRecvAt, eventUuid)
-                "weight_events"  -> ledger.markWeightEventSynced(serverRecvAt, eventUuid)
+                "pantry_events" -> ledger.markPantryEventSynced(serverRecvAt, eventUuid)
+                "meal_events" -> ledger.markMealEventSynced(serverRecvAt, eventUuid)
+                "weight_events" -> ledger.markWeightEventSynced(serverRecvAt, eventUuid)
                 "receipt_events" -> ledger.markReceiptEventSynced(serverRecvAt, eventUuid)
             }
             outbox.deleteOutboxRow(eventUuid)
@@ -46,7 +49,10 @@ class OutboxStore(private val db: DieticianDatabase) {
     }
 
     /** Increments `attempts` and records [error] as the last failure message. */
-    fun recordFailure(eventUuid: String, error: String) {
+    fun recordFailure(
+        eventUuid: String,
+        error: String,
+    ) {
         outbox.recordOutboxFailure(error, eventUuid)
     }
 
@@ -58,10 +64,15 @@ class OutboxStore(private val db: DieticianDatabase) {
      *
      * @return `true` iff a row was promoted.
      */
-    fun promoteIfDead(eventUuid: String, nowMs: Long, maxAttempts: Int = 10): Boolean =
+    fun promoteIfDead(
+        eventUuid: String,
+        nowMs: Long,
+        maxAttempts: Int = 10,
+    ): Boolean =
         db.transactionWithResult {
-            val row = outbox.selectOutboxRow(eventUuid).executeAsOneOrNull()
-                ?: return@transactionWithResult false
+            val row =
+                outbox.selectOutboxRow(eventUuid).executeAsOneOrNull()
+                    ?: return@transactionWithResult false
             if (row.attempts < maxAttempts.toLong()) return@transactionWithResult false
             outbox.promoteToDeadLetter(nowMs, eventUuid)
             outbox.deleteFromOutboxAfterDeadLetter(eventUuid)
@@ -72,13 +83,17 @@ class OutboxStore(private val db: DieticianDatabase) {
     fun deadLetters() = outbox.selectDeadLetters().executeAsList()
 
     /** Operator marks a dead-letter row resolved (via `/diag` manual replay). */
-    fun markDeadLetterResolved(uuid: String, resolvedAt: Long) =
-        outbox.markDeadLetterResolved(resolvedAt, uuid)
+    fun markDeadLetterResolved(
+        uuid: String,
+        resolvedAt: Long,
+    ) = outbox.markDeadLetterResolved(resolvedAt, uuid)
 
     /** Dead-letter rows that have not yet been reported to the diagnostics reporter. */
     fun unreportedDeadLetters() = outbox.selectUnreportedDeadLetters().executeAsList()
 
     /** Stamps `reported_at` so the diagnostics reporter does not double-report. */
-    fun markDeadLetterReported(uuid: String, reportedAt: Long) =
-        outbox.markDeadLetterReported(reportedAt, uuid)
+    fun markDeadLetterReported(
+        uuid: String,
+        reportedAt: Long,
+    ) = outbox.markDeadLetterReported(reportedAt, uuid)
 }

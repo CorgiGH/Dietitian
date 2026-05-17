@@ -51,7 +51,11 @@ class PantrySnapshotTest {
         snap.currentAllOnce().any { it.skuUuid == "sku-1" } shouldBe false
     }
 
-    private fun p(sku: String, qty: Double, t: Long) = EventPayload.Pantry(
+    private fun p(
+        sku: String,
+        qty: Double,
+        t: Long,
+    ) = EventPayload.Pantry(
         eventUuid = java.util.UUID.randomUUID().toString(),
         deviceId = "test",
         originatedAtMs = t,

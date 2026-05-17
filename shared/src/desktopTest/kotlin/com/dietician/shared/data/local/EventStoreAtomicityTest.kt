@@ -15,7 +15,6 @@ import kotlin.test.Test
  * Lives in `desktopTest` (NOT `commonTest`) because [JdbcSqliteDriver] is JVM-only.
  */
 class EventStoreAtomicityTest {
-
     private fun newDb(): DieticianDatabase {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         DieticianDatabase.Schema.create(driver)
@@ -26,14 +25,15 @@ class EventStoreAtomicityTest {
     fun `enqueuePantryEvent writes event + outbox + snapshot in one transaction`() {
         val db = newDb()
         val store = EventStore(db, Json)
-        val ev = EventPayload.Pantry(
-            eventUuid = "11111111-1111-1111-1111-111111111111",
-            deviceId = "test-dev",
-            originatedAtMs = 1_000L,
-            skuUuid = "sku-1",
-            deltaQty = 5.0,
-            unit = "buc",
-        )
+        val ev =
+            EventPayload.Pantry(
+                eventUuid = "11111111-1111-1111-1111-111111111111",
+                deviceId = "test-dev",
+                originatedAtMs = 1_000L,
+                skuUuid = "sku-1",
+                deltaQty = 5.0,
+                unit = "buc",
+            )
 
         store.enqueuePantryEvent(ev)
 
@@ -68,9 +68,10 @@ class EventStoreAtomicityTest {
                     deviceId = "test-dev",
                     originatedAtMs = 1L,
                     skuUuid = "sku-x",
-                    deltaQty = Double.NaN, // trips strict-mode JSON
+                    // Double.NaN trips strict-mode JSON encoding.
+                    deltaQty = Double.NaN,
                     unit = "g",
-                )
+                ),
             )
         }
 

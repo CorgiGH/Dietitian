@@ -21,11 +21,16 @@ class PantryCompactorTest {
         val compactor = PantryCompactor(db)
 
         repeat(50) { i ->
-            store.enqueuePantryEvent(EventPayload.Pantry(
-                eventUuid = UUID.randomUUID().toString(),
-                deviceId = "test", originatedAtMs = i.toLong(),
-                skuUuid = "sku-1", deltaQty = 1.0, unit = "buc",
-            ))
+            store.enqueuePantryEvent(
+                EventPayload.Pantry(
+                    eventUuid = UUID.randomUUID().toString(),
+                    deviceId = "test",
+                    originatedAtMs = i.toLong(),
+                    skuUuid = "sku-1",
+                    deltaQty = 1.0,
+                    unit = "buc",
+                ),
+            )
         }
         val before = snap.currentForSku("sku-1")!!.qty
 

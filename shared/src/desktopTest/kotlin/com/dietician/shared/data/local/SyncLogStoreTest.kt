@@ -15,7 +15,8 @@ class SyncLogStoreTest {
 
     @Test
     fun `records each trigger plus pull boundaries`() {
-        val db = newDb(); val log = SyncLogStore(db)
+        val db = newDb()
+        val log = SyncLogStore(db)
         val id = log.recordTrigger(source = "ws", firedAtMs = 100L)
         log.recordDebounced(id, debouncedToMs = 150L)
         log.recordPullCompleted(id, pullStartedAt = 200L, pullEndedAt = 250L, eventsPulled = 5, error = null)
@@ -27,7 +28,8 @@ class SyncLogStoreTest {
 
     @Test
     fun `cursor round-trip per table`() {
-        val db = newDb(); val meta = CacheMetaStore(db)
+        val db = newDb()
+        val meta = CacheMetaStore(db)
         meta.cursorFor("pantry_events") shouldBe Cursor.ZERO
         meta.advanceCursor("pantry_events", Cursor(timestampMs = 500L, eventUuid = "u-99"))
         meta.cursorFor("pantry_events") shouldBe Cursor(500L, "u-99")

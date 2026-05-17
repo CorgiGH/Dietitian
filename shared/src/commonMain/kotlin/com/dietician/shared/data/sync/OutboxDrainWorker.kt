@@ -32,17 +32,19 @@ class OutboxDrainWorker(
     suspend fun drainOnce() {
         val batch = outbox.nextBatch(batchSize)
         if (batch.isEmpty()) return
-        val req = PushRequest(
-            deviceId = deviceId(),
-            events = batch.map { EventEnvelope(it.table_name, it.event_uuid, it.payload_json) },
-        )
-        val resp = try {
-            client.push(req)
-        } catch (e: Throwable) {
-            batch.forEach { outbox.recordFailure(it.event_uuid, e.message ?: e::class.simpleName.orEmpty()) }
-            batch.forEach { outbox.promoteIfDead(it.event_uuid, clock.nowMillis(), maxAttempts) }
-            return
-        }
+        val req =
+            PushRequest(
+                deviceId = deviceId(),
+                events = batch.map { EventEnvelope(it.table_name, it.event_uuid, it.payload_json) },
+            )
+        val resp =
+            try {
+                client.push(req)
+            } catch (e: Throwable) {
+                batch.forEach { outbox.recordFailure(it.event_uuid, e.message ?: e::class.simpleName.orEmpty()) }
+                batch.forEach { outbox.promoteIfDead(it.event_uuid, clock.nowMillis(), maxAttempts) }
+                return
+            }
         resp.accepted.forEach { outbox.markSynced(it.eventUuid, it.serverRecvAt) }
         resp.rejected.forEach {
             outbox.recordFailure(it.eventUuid, it.reason)

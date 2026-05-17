@@ -14,14 +14,19 @@ data class Lww<T>(val value: T, val hlc: HlcTimestamp, val serverRecvAt: Long?)
  * (sorts last = losing).
  */
 object LwwMerge {
-    fun <T> pick(a: Lww<T>, b: Lww<T>): Lww<T> {
-        val cmp = compareValuesBy(
-            a, b,
-            { it.serverRecvAt?.let { v -> -v } ?: Long.MAX_VALUE },
-            { -it.hlc.wallMs },
-            { -it.hlc.seq },
-            { it.hlc.deviceId },
-        )
+    fun <T> pick(
+        a: Lww<T>,
+        b: Lww<T>,
+    ): Lww<T> {
+        val cmp =
+            compareValuesBy(
+                a,
+                b,
+                { it.serverRecvAt?.let { v -> -v } ?: Long.MAX_VALUE },
+                { -it.hlc.wallMs },
+                { -it.hlc.seq },
+                { it.hlc.deviceId },
+            )
         return if (cmp <= 0) a else b
     }
 }

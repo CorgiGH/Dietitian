@@ -10,14 +10,15 @@ object WalPragmas {
      * Used by the Android `AndroidSqliteDriver.Callback.onOpen` path which routes through
      * `SupportSQLiteDatabase.execSQL` — that path tolerates row-returning PRAGMAs.
      */
-    val INIT = listOf(
-        "PRAGMA journal_mode=WAL",
-        "PRAGMA synchronous=NORMAL",
-        "PRAGMA busy_timeout=5000",
-        "PRAGMA cache_size=-64000",
-        "PRAGMA foreign_keys=ON",
-        "PRAGMA wal_autocheckpoint=1000",
-    )
+    val INIT =
+        listOf(
+            "PRAGMA journal_mode=WAL",
+            "PRAGMA synchronous=NORMAL",
+            "PRAGMA busy_timeout=5000",
+            "PRAGMA cache_size=-64000",
+            "PRAGMA foreign_keys=ON",
+            "PRAGMA wal_autocheckpoint=1000",
+        )
 
     /**
      * Driver-portable apply. Every PRAGMA is routed through `executeQuery` because the
@@ -35,7 +36,10 @@ object WalPragmas {
         runPragma(driver, "PRAGMA wal_checkpoint(TRUNCATE)")
     }
 
-    private fun runPragma(driver: SqlDriver, sql: String) {
+    private fun runPragma(
+        driver: SqlDriver,
+        sql: String,
+    ) {
         driver.executeQuery(
             identifier = null,
             sql = sql,

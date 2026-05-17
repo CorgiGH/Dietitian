@@ -13,14 +13,16 @@ import kotlin.test.Test
  * Lives in `desktopTest` (NOT `commonTest`) because [JdbcSqliteDriver] is JVM-only.
  */
 class OutboxStoreTest {
-
     private fun newDb(): DieticianDatabase {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         DieticianDatabase.Schema.create(driver)
         return DieticianDatabase(driver)
     }
 
-    private fun pantry(uuid: String, t: Long) = EventPayload.Pantry(
+    private fun pantry(
+        uuid: String,
+        t: Long,
+    ) = EventPayload.Pantry(
         eventUuid = uuid,
         deviceId = "d",
         originatedAtMs = t,

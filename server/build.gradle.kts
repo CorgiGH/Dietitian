@@ -13,13 +13,14 @@ kotlin {
 
 application {
     mainClass.set("com.dietician.server.MainKt")
-    applicationDefaultJvmArgs = listOf(
-        "-Xms256m",
-        "-Xmx512m",
-        "-XX:+UseG1GC",
-        "-XX:MaxGCPauseMillis=200",
-        "-Dfile.encoding=UTF-8"
-    )
+    applicationDefaultJvmArgs =
+        listOf(
+            "-Xms256m",
+            "-Xmx512m",
+            "-XX:+UseG1GC",
+            "-XX:MaxGCPauseMillis=200",
+            "-Dfile.encoding=UTF-8",
+        )
 }
 
 dependencies {
@@ -84,3 +85,9 @@ ktor {
         archiveFileName.set("dietician-server.jar")
     }
 }
+
+// flexmark-all pulls multiple jars whose runtime entries collide (e.g.
+// `library-desktop-*.jar`). Application-plugin dist tasks copy them all into
+// `lib/`; tell Gradle to drop the duplicates instead of failing the build.
+tasks.named<Tar>("distTar") { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+tasks.named<Zip>("distZip") { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }

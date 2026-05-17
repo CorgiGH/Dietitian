@@ -1,0 +1,52 @@
+# Dietician detekt overrides — applied on top of detekt defaults via
+# `buildUponDefaultConfig = true` in root build.gradle.kts.
+#
+# Rationale per rule below. Keep this file small + commented; default config
+# is intentionally not vendored to avoid drift with detekt version bumps.
+
+naming:
+  FunctionNaming:
+    active: true
+    functionPattern: '[a-z][a-zA-Z0-9]*'
+    # @Composable functions are PascalCase per Compose convention.
+    # See https://developer.android.com/develop/ui/compose/api-guidelines#naming-composables.
+    ignoreAnnotated: ['Composable']
+
+style:
+  ForbiddenComment:
+    active: true
+    # Plan-1 ships data layer only. UI / scraper / server entrypoint scaffolds
+    # carry placeholder TODOs that get fleshed out in later plans.
+    excludes:
+      - '**/scrapers/**'
+      - '**/desktopApp/**'
+      - '**/androidApp/**'
+      - '**/server/Main.kt'
+  MagicNumber:
+    active: true
+    # Small constants + common HTTP / port / time values stay readable inline.
+    ignoreNumbers: ['-1', '0', '1', '2', '10', '100', '1000', '8081']
+    ignorePropertyDeclaration: true
+    ignoreEnums: true
+    ignoreAnnotation: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    # Test code routinely uses literal expected values.
+    excludes: ['**/test/**', '**/androidUnitTest/**', '**/commonTest/**', '**/desktopTest/**']
+  ReturnCount:
+    active: true
+    max: 4
+
+complexity:
+  CyclomaticComplexMethod:
+    active: true
+    # SchemaParityHelpers.compareSchemas has legitimate fan-out (table x col
+    # x null-checks x type-aliases). Raised from default 15.
+    threshold: 20
+    ignoreSingleWhenExpression: true
+    ignoreSimpleWhenEntries: true
+  LongMethod:
+    active: true
+    threshold: 80
+  NestedBlockDepth:
+    active: true
+    threshold: 5

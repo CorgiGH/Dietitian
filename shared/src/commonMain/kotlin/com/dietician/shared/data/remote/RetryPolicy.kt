@@ -13,7 +13,10 @@ import kotlin.time.Duration.Companion.seconds
 object RetryPolicy {
     private val CAP: Duration = 30.seconds
 
-    fun nextDelay(attempt: Int, rand: Random = Random.Default): Duration {
+    fun nextDelay(
+        attempt: Int,
+        rand: Random = Random.Default,
+    ): Duration {
         val baseSeconds = (1L shl min(attempt, 16)).coerceAtMost(30L)
         val base = baseSeconds.seconds
         val capped = if (base > CAP) CAP else base

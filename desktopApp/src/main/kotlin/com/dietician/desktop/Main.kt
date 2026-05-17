@@ -14,27 +14,28 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.dietician.shared.Dietician
 
-fun main() = application {
-    Window(onCloseRequest = ::exitApplication, title = "Dietician ${Dietician.VERSION}") {
-        MaterialTheme {
-            Surface(Modifier.fillMaxSize()) {
-                DieticianDesktopHome()
+fun main() =
+    application {
+        Window(onCloseRequest = ::exitApplication, title = "Dietician ${Dietician.VERSION}") {
+            MaterialTheme {
+                Surface(Modifier.fillMaxSize()) {
+                    DieticianDesktopHome()
+                }
             }
         }
     }
-}
 
 @Composable
 private fun DieticianDesktopHome() {
     Column(
         Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("Dietician ${Dietician.VERSION}", style = MaterialTheme.typography.headlineLarge)
         Text("Spec date: ${Dietician.SPEC_DATE}")
         Text(
             "Desktop scaffold placeholder. See docs/superpowers/specs/2026-05-17-dietician-design.md\n" +
-                "Subprocesses (ClaudeMax CLI, Playwright, whisper.cpp, yt-dlp) wired in implementation phase."
+                "Subprocesses (ClaudeMax CLI, Playwright, whisper.cpp, yt-dlp) wired in implementation phase.",
         )
     }
 }

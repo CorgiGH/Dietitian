@@ -6,7 +6,9 @@ import android.provider.Settings
 
 @Volatile private var androidContextRef: Context? = null
 
-fun bindAndroidContext(ctx: Context) { androidContextRef = ctx.applicationContext }
+fun bindAndroidContext(ctx: Context) {
+    androidContextRef = ctx.applicationContext
+}
 
 @SuppressLint("HardwareIds")
 actual fun deviceId(): String {

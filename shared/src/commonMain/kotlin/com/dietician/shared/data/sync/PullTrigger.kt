@@ -9,8 +9,11 @@ import kotlinx.coroutines.launch
 
 sealed interface PullTrigger {
     data object Ws : PullTrigger
+
     data object Ntfy : PullTrigger
+
     data object Manual : PullTrigger
+
     data object Periodic : PullTrigger
 }
 
@@ -27,11 +30,12 @@ class PullTriggerCoalescer(
     fun push(trigger: PullTrigger) {
         pending?.cancel()
         pendingTrigger = trigger
-        pending = scope.launch {
-            delay(debounceMs)
-            val t = pendingTrigger ?: return@launch
-            pendingTrigger = null
-            out.tryEmit(t)
-        }
+        pending =
+            scope.launch {
+                delay(debounceMs)
+                val t = pendingTrigger ?: return@launch
+                pendingTrigger = null
+                out.tryEmit(t)
+            }
     }
 }

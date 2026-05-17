@@ -26,7 +26,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
         getByName("debug") {
@@ -45,7 +45,13 @@ android {
 
     packaging {
         resources {
-            excludes += setOf("META-INF/AL2.0", "META-INF/LGPL2.1")
+            excludes +=
+                setOf(
+                    "META-INF/AL2.0",
+                    "META-INF/LGPL2.1",
+                    // resilience4j-* jars all ship a top-level COPYRIGHT.txt; pick one is fine.
+                    "COPYRIGHT.txt",
+                )
         }
     }
 }
@@ -60,7 +66,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")  // EncryptedSharedPreferences
+    implementation("androidx.security:security-crypto:1.1.0-alpha06") // EncryptedSharedPreferences
     implementation("androidx.camera:camera-camera2:1.3.4")
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")

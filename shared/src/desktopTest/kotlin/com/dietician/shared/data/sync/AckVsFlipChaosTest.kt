@@ -30,13 +30,21 @@ class AckVsFlipChaosTest {
 
     @Test
     fun `crash between server-ack and local-markSynced does not cause duplicate inventory`() {
-        val db = newDb(); val store = EventStore(db, Json); val outbox = OutboxStore(db)
+        val db = newDb()
+        val store = EventStore(db, Json)
+        val outbox = OutboxStore(db)
 
         // 1) Phone enqueues +5 of sku-1 (writes event + outbox + snapshot in one tx).
-        store.enqueuePantryEvent(EventPayload.Pantry(
-            eventUuid = "u-1", deviceId = "phone", originatedAtMs = 100L,
-            skuUuid = "sku-1", deltaQty = 5.0, unit = "g",
-        ))
+        store.enqueuePantryEvent(
+            EventPayload.Pantry(
+                eventUuid = "u-1",
+                deviceId = "phone",
+                originatedAtMs = 100L,
+                skuUuid = "sku-1",
+                deltaQty = 5.0,
+                unit = "g",
+            ),
+        )
 
         // 2) "Server" ACKs but we crash BEFORE markSynced. Outbox still has u-1.
         outbox.nextBatch(10).size shouldBe 1

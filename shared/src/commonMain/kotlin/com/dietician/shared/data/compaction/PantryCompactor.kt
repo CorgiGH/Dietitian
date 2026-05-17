@@ -16,11 +16,11 @@ import com.dietician.shared.data.sql.DieticianDatabase
  * Plan-7 owns full rebuild semantics.
  */
 class PantryCompactor(private val db: DieticianDatabase) {
-
-    fun compact() = db.transaction {
-        val events = db.`0003_pantry_snapshotQueries`.selectEventsAfterCheckpoint().executeAsList()
-        if (events.isEmpty()) return@transaction
-        val maxTs = events.maxOf { it.originated_at }
-        db.`0003_pantry_snapshotQueries`.advanceCheckpoint(maxTs)
-    }
+    fun compact() =
+        db.transaction {
+            val events = db.`0003_pantry_snapshotQueries`.selectEventsAfterCheckpoint().executeAsList()
+            if (events.isEmpty()) return@transaction
+            val maxTs = events.maxOf { it.originated_at }
+            db.`0003_pantry_snapshotQueries`.advanceCheckpoint(maxTs)
+        }
 }

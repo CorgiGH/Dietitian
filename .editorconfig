@@ -1,0 +1,31 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+ktlint_code_style = intellij_idea
+# Compose convention: @Composable functions use PascalCase. ktlint's
+# function-naming rule predates Compose; disable globally and rely on detekt's
+# FunctionNaming (which honors `ignoreAnnotated: [Composable]`) to enforce the
+# rule everywhere else.
+ktlint_standard_function-naming = disabled
+# KMP convention: per-target `expect`/`actual` files use the
+# `<Name>.android.kt` / `<Name>.desktop.kt` suffix so platform variants are
+# easy to spot in the file tree. ktlint's `filename` rule wants the filename
+# to match the single class/declaration inside, which clashes with this.
+ktlint_standard_filename = disabled
+# Compose Multiplatform's resource generator emits `ActualResourceCollectors.kt`
+# with 2-space indent + extra blank lines. The file is generated, so suppress
+# stylistic rules globally rather than touching generated output.
+# Per-path disable below also catches it explicitly.
+ktlint_standard_no-consecutive-blank-lines = disabled
+
+[**/build/generated/**.kt]
+# All ktlint rules disabled for generated source trees.
+ktlint = disabled
