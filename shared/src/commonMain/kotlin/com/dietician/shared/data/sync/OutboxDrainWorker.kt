@@ -8,6 +8,7 @@ import com.dietician.shared.data.local.OutboxStore
 import com.dietician.shared.data.local.SyncLogStore
 import com.dietician.shared.data.remote.RetryPolicy
 import com.dietician.shared.data.remote.SyncClient
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 
@@ -20,6 +21,15 @@ import kotlin.time.Duration.Companion.seconds
  * local markSynced committing, the next drain retries the same uuid. Server is idempotent
  * on event_uuid via UPSERT-by-uuid. Snapshot maintenance is one-shot at EventStore.enqueue,
  * not on push-ack, so replay does not double-apply. See AckVsFlipChaosTest.
+ *
+ * Council #2 fix: push-side errors are now routed through [classifyError]:
+ *   * Transient (IOException, all timeouts, 5xx) → no attempts increment, retry next tick.
+ *   * Permanent (4xx, parse, PermanentSyncException, IllegalStateException) → increment +
+ *     dead-letter at maxAttempts.
+ *   * Anything else → conservative Transient.
+ *
+ * CancellationException is re-thrown FIRST in every catch — kotlinx-coroutines requires this
+ * or the worker becomes unkillable from its parent scope.
  */
 class OutboxDrainWorker(
     private val outbox: OutboxStore,
@@ -41,8 +51,19 @@ class OutboxDrainWorker(
             try {
                 client.push(req)
             } catch (e: Throwable) {
-                batch.forEach { outbox.recordFailure(it.event_uuid, e.message ?: e::class.simpleName.orEmpty()) }
-                batch.forEach { outbox.promoteIfDead(it.event_uuid, clock.nowMillis(), maxAttempts) }
+                if (e is CancellationException) throw e
+                when (classifyError(e)) {
+                    OutboxError.Transient -> {
+                        // Do NOT increment attempts on a transient error. The whole batch
+                        // will be retried on the next drain tick. recordFailure / promoteIfDead
+                        // are intentionally skipped — a 20s WAN blip must not dead-letter the
+                        // entire outbox (council #2 BREAK).
+                    }
+                    OutboxError.Permanent -> {
+                        batch.forEach { outbox.recordFailure(it.event_uuid, errorLabel(e)) }
+                        batch.forEach { outbox.promoteIfDead(it.event_uuid, clock.nowMillis(), maxAttempts) }
+                    }
+                }
                 return
             }
         resp.accepted.forEach { outbox.markSynced(it.eventUuid, it.serverRecvAt) }
@@ -62,9 +83,12 @@ class OutboxDrainWorker(
                 failureStreak = 0
                 if (empty) delay(2.seconds)
             } catch (e: Throwable) {
+                if (e is CancellationException) throw e
                 failureStreak += 1
                 delay(RetryPolicy.nextDelay(failureStreak))
             }
         }
     }
+
+    private fun errorLabel(e: Throwable): String = e.message ?: e::class.simpleName.orEmpty()
 }

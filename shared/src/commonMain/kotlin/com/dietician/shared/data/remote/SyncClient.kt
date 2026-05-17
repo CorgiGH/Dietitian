@@ -6,6 +6,7 @@ import com.dietician.shared.data.api.PushRequest
 import com.dietician.shared.data.api.PushResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -33,6 +34,16 @@ class SyncClient(
                         encodeDefaults = true
                     },
                 )
+            }
+            // Council #2: cap network calls so a stuck socket never hangs the drain forever.
+            // A 20s WAN blip used to dead-letter the entire outbox because every push call
+            // returned a generic Throwable that incremented attempts to 10 on a single
+            // failure. With non-infinite timeouts we get a typed timeout exception that
+            // OutboxError.classifyError routes as Transient.
+            install(HttpTimeout) {
+                requestTimeoutMillis = 10_000
+                connectTimeoutMillis = 5_000
+                socketTimeoutMillis = 30_000
             }
         }
     }
