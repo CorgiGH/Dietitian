@@ -91,8 +91,9 @@ fun dumpSqldelightSchema(): Map<String, TableSchema> {
         return tables.associateWith { t ->
             val cols = driver.executeQuery(
                 identifier = null,
-                // PRAGMA params are not bindable; safe because `t` came from sqlite_master.
-                sql = "PRAGMA table_info($t)",
+                // PRAGMA params are not bindable; `t` came from sqlite_master so it's trusted,
+                // but quote-escape defensively to harden against any future identifier oddities.
+                sql = "PRAGMA table_info(\"${t.replace("\"", "\"\"")}\")",
                 mapper = { cursor ->
                     val cols = mutableListOf<ColumnDef>()
                     while (cursor.next().value) {
@@ -100,7 +101,8 @@ fun dumpSqldelightSchema(): Map<String, TableSchema> {
                             name = cursor.getString(1)!!,
                             typeNormalized = (cursor.getString(2) ?: "").uppercase(),
                             // column 3 = `notnull`; 0 means nullable.
-                            nullable = (cursor.getLong(3) ?: 0L) == 0L,
+                            // Use !! to fail loud if SQLite ever changes PRAGMA table_info shape.
+                            nullable = cursor.getLong(3)!! == 0L,
                         )
                     }
                     QueryResult.Value(cols)
@@ -115,22 +117,28 @@ fun dumpSqldelightSchema(): Map<String, TableSchema> {
 }
 
 fun loadAllowList(): AllowList {
-    val text = (
+    val stream = (
         Thread.currentThread().contextClassLoader
             ?: ClassLoader.getSystemClassLoader()
         ).getResourceAsStream("schema-parity/allow-list.json")
-        ?.bufferedReader()
-        ?.readText()
         ?: error("schema-parity/allow-list.json not found on test classpath")
+    val text = stream.use { it.bufferedReader().readText() }
     val root = Json.parseToJsonElement(text).jsonObject
     return AllowList(
-        typeAliases = root["type_aliases"]!!.jsonObject.mapValues { it.value.jsonPrimitive.content },
-        skipped = root["skipped_columns"]!!.jsonArray.map {
-            val o = it.jsonObject
-            SkippedCol(o["table"]!!.jsonPrimitive.content, o["column"]!!.jsonPrimitive.content)
-        }.toSet(),
-        clientOnly = root["client_only_tables"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet(),
-        serverOnly = root["server_only_tables"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet(),
+        typeAliases = (root["type_aliases"] ?: error("allow-list.json missing 'type_aliases'"))
+            .jsonObject.mapValues { it.value.jsonPrimitive.content },
+        skipped = (root["skipped_columns"] ?: error("allow-list.json missing 'skipped_columns'"))
+            .jsonArray.map {
+                val o = it.jsonObject
+                SkippedCol(
+                    (o["table"] ?: error("skipped_columns entry missing 'table'")).jsonPrimitive.content,
+                    (o["column"] ?: error("skipped_columns entry missing 'column'")).jsonPrimitive.content,
+                )
+            }.toSet(),
+        clientOnly = (root["client_only_tables"] ?: error("allow-list.json missing 'client_only_tables'"))
+            .jsonArray.map { it.jsonPrimitive.content }.toSet(),
+        serverOnly = (root["server_only_tables"] ?: error("allow-list.json missing 'server_only_tables'"))
+            .jsonArray.map { it.jsonPrimitive.content }.toSet(),
     )
 }
 
@@ -143,6 +151,10 @@ fun compareSchemas(
     // Flyway also creates `flyway_schema_history`; never a parity concern.
     val flywayInternal = setOf("flyway_schema_history")
     val sharedTables = (pg.keys + sl.keys) - allow.clientOnly - allow.serverOnly - flywayInternal
+    // Sort aliases by descending key length so longest keys match first.
+    // Prevents a future shorter alias (e.g. `TIMESTAMP -> TEXT`) inserted before
+    // `TIMESTAMP WITH TIME ZONE` from silently substring-matching the long form.
+    val sortedAliases = allow.typeAliases.entries.sortedByDescending { it.key.length }
     for (t in sharedTables.sorted()) {
         val pgT = pg[t]
         val slT = sl[t]
@@ -157,7 +169,7 @@ fun compareSchemas(
             val s = slCols[c]
             if (p == null) { violations += "$t.$c in SQLDelight but missing from Postgres"; continue }
             if (s == null) { violations += "$t.$c in Postgres but missing from SQLDelight"; continue }
-            val pNorm = allow.typeAliases.entries.fold(p.typeNormalized) { acc, (k, v) ->
+            val pNorm = sortedAliases.fold(p.typeNormalized) { acc, (k, v) ->
                 if (acc.contains(k)) v else acc
             }
             val sNorm = s.typeNormalized
