@@ -1,0 +1,69 @@
+# Gradle
+.gradle/
+build/
+out/
+**/build/
+**/.gradle/
+*.gradle.lockfile
+gradle/wrapper/gradle-wrapper.jar.cache
+
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Kotlin
+.kotlin/
+
+# Android
+local.properties
+*.apk
+*.aab
+*.dex
+captures/
+.cxx/
+
+# SQLite / WAL / journal (state mutable on disk)
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-journal
+
+# State + raw files (per-machine, NOT in repo)
+state/
+raw/
+
+# Credentials (NEVER in git)
+*.age
+.env
+.env.*
+credentials*
+*.key
+*.pem
+local-secrets.toml
+
+# Logs
+*.log
+logs/
+
+# Compose Desktop output
+*.exe
+*.msi
+*.dmg
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Council / agent caches
+.claude/council-cache/
+.claude/agent-outputs/
+
+# Editor
+.vscode/
+*.swp
+*.swo
+*~
