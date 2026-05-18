@@ -1,5 +1,6 @@
 package com.dietician.shared.ui.integration
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -7,6 +8,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.core.screen.ScreenKey
+import cafe.adriel.voyager.navigator.Navigator
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.i18n.DieticianLocaleProvider
 import com.dietician.shared.ui.nav.DieticianBottomNav
@@ -48,7 +52,7 @@ class TailscaleBlockerFlowTest {
                                 reachable = true
                             },
                         )
-                        true -> DieticianBottomNav()
+                        true -> Navigator(screen = BlockerFlowStubScreen) { DieticianBottomNav() }
                     }
                 }
             }
@@ -82,7 +86,7 @@ class TailscaleBlockerFlowTest {
                     when (reachable) {
                         null -> SplashScreen()
                         false -> TailscaleDisconnectedScreen(onRetry = { /* probe stays false */ })
-                        true -> DieticianBottomNav()
+                        true -> Navigator(screen = BlockerFlowStubScreen) { DieticianBottomNav() }
                     }
                 }
             }
@@ -91,5 +95,14 @@ class TailscaleBlockerFlowTest {
         composeRule.onNodeWithTag("tailscale-disconnected-retry").performClick()
         // Still on blocker, no nav paint.
         composeRule.onNodeWithTag("tailscale-disconnected-blocker").assertIsDisplayed()
+    }
+}
+
+private object BlockerFlowStubScreen : Screen {
+    override val key: ScreenKey = "blocker-flow-stub"
+
+    @Composable
+    override fun Content() {
+        // Empty — test only inspects post-blocker DieticianBottomNav paint.
     }
 }

@@ -1,10 +1,14 @@
 package com.dietician.shared.ui.nav
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.core.screen.ScreenKey
+import cafe.adriel.voyager.navigator.Navigator
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.i18n.DieticianLocaleProvider
 import com.dietician.shared.ui.theme.DieticianTheme
@@ -30,7 +34,9 @@ class NoSubjectSwitcherTest {
         composeRule.setContent {
             DieticianLocaleProvider(locale = AppLocale.EN) {
                 DieticianTheme {
-                    DieticianBottomNav()
+                    Navigator(screen = SubjectSwitcherStubScreen) {
+                        DieticianBottomNav()
+                    }
                 }
             }
         }
@@ -44,5 +50,14 @@ class NoSubjectSwitcherTest {
         // Zero subject-switcher elements.
         composeRule.onAllNodesWithTag("subject-switcher").assertCountEquals(0)
         composeRule.onAllNodesWithTag("nav-subject-switcher").assertCountEquals(0)
+    }
+}
+
+private object SubjectSwitcherStubScreen : Screen {
+    override val key: ScreenKey = "subject-switcher-stub"
+
+    @Composable
+    override fun Content() {
+        // Empty — test only inspects DieticianBottomNav, not the content slot.
     }
 }

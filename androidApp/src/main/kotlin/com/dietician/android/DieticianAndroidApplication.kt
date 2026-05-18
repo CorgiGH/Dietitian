@@ -2,6 +2,7 @@ package com.dietician.android
 
 import android.app.Application
 import com.dietician.android.di.androidPlatformModule
+import com.dietician.shared.ui.di.uiModule
 import com.dietician.shared.ui.network.networkModule
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
@@ -36,6 +37,7 @@ class DieticianAndroidApplication : Application() {
         startKoin {
             modules(
                 networkModule,
+                uiModule,
                 androidPlatformModule(this@DieticianAndroidApplication),
             )
         }

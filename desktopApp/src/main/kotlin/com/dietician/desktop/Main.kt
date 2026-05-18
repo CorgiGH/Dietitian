@@ -9,6 +9,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.dietician.desktop.di.desktopPlatformModule
 import com.dietician.shared.Dietician
+import com.dietician.shared.ui.di.uiModule
 import com.dietician.shared.ui.nav.DieticianApp
 import com.dietician.shared.ui.network.BaseUrlProvider
 import com.dietician.shared.ui.network.networkModule
@@ -40,7 +41,17 @@ fun main() {
 
             LaunchedEffect(probeNonce) {
                 reachable = null
-                reachable = TailnetReachability.check(baseUrlProvider.baseUrl)
+                reachable =
+                    if (System.getenv("DIETICIAN_DEV_SKIP_REACHABILITY")?.lowercase() == "true") {
+                        // Dev affordance — skip the RC16 probe when the VPS backend
+                        // is not deployed yet so smoke walks aren't gated. Logged
+                        // loud so a misconfigured prod build doesn't silently bypass.
+                        @Suppress("ForbiddenComment")
+                        println("[DIETICIAN] DEV_SKIP_REACHABILITY=true — bypassing Tailscale probe.")
+                        true
+                    } else {
+                        TailnetReachability.check(baseUrlProvider.baseUrl)
+                    }
             }
 
             when (reachable) {
@@ -56,6 +67,6 @@ private fun bootKoin() {
     val existing = runCatching { GlobalContext.getOrNull() }.getOrNull()
     if (existing != null) return
     startKoin {
-        modules(networkModule, desktopPlatformModule)
+        modules(networkModule, uiModule, desktopPlatformModule)
     }
 }

@@ -19,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import cafe.adriel.voyager.navigator.CurrentScreen
+import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.i18n.DieticianLocaleProvider
 import com.dietician.shared.ui.i18n.Strings
@@ -76,17 +78,25 @@ private fun bottomNavMeta(screen: DieticianScreen, s: Strings): NavMeta =
  * Bottom navigation bar with 5 top-level tabs (per spec). Each item carries
  * a [testTag] of `"nav-{screen.key}"` so KMP UI tests can target it via
  * `onNodeWithTag("nav-home")` etc.
+ *
+ * **Active routing:** reads [LocalNavigator] from the surrounding [Navigator]
+ * scope. `selected` reflects the navigator's `lastItem`; clicking a non-
+ * selected tab calls `navigator.replaceAll(screen)` to keep the back stack
+ * shallow (matches the spec's "5 tabs are roots, no nested back stack at
+ * top level" guidance).
  */
 @Composable
 fun DieticianBottomNav() {
     val s: Strings = strings()
+    val navigator = LocalNavigator.currentOrThrow
+    val currentKey = navigator.lastItem.key
     NavigationBar(modifier = Modifier.testTag("dietician-bottom-nav")) {
         BottomNavScreens.forEach { screen ->
             val meta = bottomNavMeta(screen, s)
-            // selected + onClick wired to active route in Task 27/28 mount-site.
+            val isSelected = currentKey == screen.key
             NavigationBarItem(
-                selected = false,
-                onClick = { },
+                selected = isSelected,
+                onClick = { if (!isSelected) navigator.replaceAll(screen) },
                 icon = { Icon(imageVector = meta.icon, contentDescription = meta.label) },
                 label = { Text(meta.label) },
                 modifier = Modifier.testTag("nav-${screen.key}"),

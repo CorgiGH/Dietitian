@@ -2,8 +2,16 @@ package com.dietician.shared.ui.nav
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import com.dietician.shared.ui.screens.HomeScreen
+import com.dietician.shared.ui.screens.HomeViewModel
+import org.koin.compose.koinInject
 
 /**
  * Sealed Voyager [Screen] hierarchy for Dietician's top-level destinations.
@@ -12,9 +20,12 @@ import cafe.adriel.voyager.core.screen.ScreenKey
  * DieticianBottomNav). Detail screens (MealDetail) embed their id into the
  * key so back-stack restoration round-trips correctly.
  *
- * Bodies are placeholders — later batches replace the Text(...) with the real
- * screen Composables. Keeping them as compilable stubs here means the nav
- * skeleton can be live-exercised end-to-end without later tasks blocking.
+ * **Mount state (nav-mount-fix iteration 1):**
+ *   - [Home] mounts the real [HomeScreen] via Koin-resolved [HomeViewModel].
+ *   - All other tabs still render [PlaceholderScreen] until their own mount
+ *     iteration ships. PlaceholderScreen carries a `placeholder-{key}` testTag
+ *     so smoke walks can distinguish "tab not yet mounted" from "tab mounted
+ *     and broken".
  */
 sealed class DieticianScreen : Screen {
 
@@ -25,7 +36,14 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Home")
+            val viewModel = koinInject<HomeViewModel>()
+            val navigator = LocalNavigator.currentOrThrow
+            LaunchedEffect(viewModel) { viewModel.load() }
+            HomeScreen(
+                viewModel = viewModel,
+                onLogMeal = { navigator.push(FoodLog) },
+                onOpenSettings = { navigator.push(Settings) },
+            )
         }
     }
 
@@ -34,7 +52,7 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Food log")
+            PlaceholderScreen("Food log", key)
         }
     }
 
@@ -43,7 +61,7 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Pantry")
+            PlaceholderScreen("Pantry", key)
         }
     }
 
@@ -52,7 +70,7 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Cookbook")
+            PlaceholderScreen("Cookbook", key)
         }
     }
 
@@ -61,7 +79,7 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Coach")
+            PlaceholderScreen("Coach", key)
         }
     }
 
@@ -70,7 +88,7 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Settings")
+            PlaceholderScreen("Settings", key)
         }
     }
 
@@ -79,7 +97,7 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Audit log")
+            PlaceholderScreen("Audit log", key)
         }
     }
 
@@ -88,7 +106,7 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Meal detail: $mealId")
+            PlaceholderScreen("Meal detail: $mealId", key)
         }
     }
 }
@@ -103,6 +121,6 @@ val BottomNavScreens: List<DieticianScreen> = listOf(
 )
 
 @Composable
-private fun PlaceholderScreen(label: String) {
-    Text(text = label)
+private fun PlaceholderScreen(label: String, key: String) {
+    Text(text = label, modifier = Modifier.testTag("placeholder-$key"))
 }
