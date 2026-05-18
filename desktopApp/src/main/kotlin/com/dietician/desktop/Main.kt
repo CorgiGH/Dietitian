@@ -1,41 +1,61 @@
 package com.dietician.desktop
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import com.dietician.desktop.di.desktopPlatformModule
 import com.dietician.shared.Dietician
+import com.dietician.shared.ui.network.BaseUrlProvider
+import com.dietician.shared.ui.network.networkModule
+import com.dietician.shared.ui.nav.DieticianApp
+import com.dietician.shared.ui.platform.TailnetReachability
+import com.dietician.shared.ui.screens.SplashScreen
+import com.dietician.shared.ui.screens.TailscaleDisconnectedScreen
+import org.koin.core.context.GlobalContext
+import org.koin.core.context.startKoin
 
-fun main() =
+/**
+ * Desktop entry point.
+ *
+ * Boot order:
+ *   1. Start Koin with [networkModule] + [desktopPlatformModule] (guarded so a
+ *      second `main()` invocation from a dev tool doesn't double-start).
+ *   2. Open the single window.
+ *   3. Run the [TailnetReachability] probe (RC16). null → splash; false →
+ *      blocker; true → [DieticianApp].
+ *
+ * The Retry button on the blocker re-bumps `probeNonce` to re-run the probe.
+ */
+fun main() {
+    bootKoin()
     application {
+        val baseUrlProvider = remember { GlobalContext.get().get<BaseUrlProvider>() }
         Window(onCloseRequest = ::exitApplication, title = "Dietician ${Dietician.VERSION}") {
-            MaterialTheme {
-                Surface(Modifier.fillMaxSize()) {
-                    DieticianDesktopHome()
-                }
+            var reachable by remember { mutableStateOf<Boolean?>(null) }
+            var probeNonce by remember { mutableStateOf(0) }
+
+            LaunchedEffect(probeNonce) {
+                reachable = null
+                reachable = TailnetReachability.check(baseUrlProvider.baseUrl)
+            }
+
+            when (reachable) {
+                null -> SplashScreen()
+                false -> TailscaleDisconnectedScreen(onRetry = { probeNonce += 1 })
+                true -> DieticianApp()
             }
         }
     }
+}
 
-@Composable
-private fun DieticianDesktopHome() {
-    Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text("Dietician ${Dietician.VERSION}", style = MaterialTheme.typography.headlineLarge)
-        Text("Spec date: ${Dietician.SPEC_DATE}")
-        Text(
-            "Desktop scaffold placeholder. See docs/superpowers/specs/2026-05-17-dietician-design.md\n" +
-                "Subprocesses (ClaudeMax CLI, Playwright, whisper.cpp, yt-dlp) wired in implementation phase.",
-        )
+private fun bootKoin() {
+    val existing = runCatching { GlobalContext.getOrNull() }.getOrNull()
+    if (existing != null) return
+    startKoin {
+        modules(networkModule, desktopPlatformModule)
     }
 }
