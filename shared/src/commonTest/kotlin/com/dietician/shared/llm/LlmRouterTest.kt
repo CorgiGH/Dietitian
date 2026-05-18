@@ -4,6 +4,14 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -333,6 +341,178 @@ class LlmRouterTest {
         }
         (callableMissing != null) shouldBe true
         callableMissing!!.extra["provider"] shouldBe "openrouter"
+    }
+
+    // ---------------------------------------------------------------------------
+    // Task 20 — edge paths: dedup concurrency, all-failed via budget, non-LlmError
+    // ---------------------------------------------------------------------------
+
+    @Test
+    fun `Task20 N=16 concurrent identical requests collapse to single dispatch via IdempotencyCache`() = runTest {
+        val audit = InMemoryAuditLogSink()
+        val budget = InMemoryBudgetLedger()
+        val cache = IdempotencyCache()
+        val counterMutex = Mutex()
+        var dispatches = 0
+        val gate = CompletableDeferred<Unit>()
+        val router = LlmRouter(
+            config = twoProviderConfig(),
+            providers = mapOf(
+                ProviderId("openrouter") to ProviderCallable { _, m ->
+                    counterMutex.withLock { dispatches++ }
+                    gate.await()
+                    resp("shared", "openrouter", m)
+                },
+                ProviderId("claudemax-cli") to ProviderCallable { _, _ -> error("unused") },
+            ),
+            cache = cache,
+            budget = budget,
+            auditLog = audit,
+        )
+        val results = coroutineScope {
+            val jobs = (1..16).map {
+                async { router.route(req("dedup-content")) }
+            }
+            launch {
+                delay(50)
+                gate.complete(Unit)
+            }
+            jobs.awaitAll()
+        }
+        dispatches shouldBe 1
+        results.size shouldBe 16
+        results.all { it.text == "shared" } shouldBe true
+        // Exactly one llm_call audit row even though 16 callers hit route().
+        audit.snapshot().count { it.kind == "llm_call" } shouldBe 1
+    }
+
+    @Test
+    fun `Task20 budget cap blocks all chain entries leading to ProviderUnavailable`() = runTest {
+        val audit = InMemoryAuditLogSink()
+        // Pre-saturate BOTH provider ledgers so reserve() throws for each chain entry.
+        val budget = InMemoryBudgetLedger(capCentsPerSubject = mapOf(subject to 10))
+        budget.reserve(subject, ProviderId("openrouter"), 1, 10)
+        budget.reserve(subject, ProviderId("claudemax-cli"), 1, 10)
+
+        val router = LlmRouter(
+            config = twoProviderConfig(),
+            providers = mapOf(
+                ProviderId("openrouter") to ProviderCallable { _, _ -> error("never called") },
+                ProviderId("claudemax-cli") to ProviderCallable { _, _ -> error("never called") },
+            ),
+            cache = IdempotencyCache(),
+            budget = budget,
+            auditLog = audit,
+        )
+        shouldThrow<LlmError.ProviderUnavailable> { router.route(req()) }
+        val rows = audit.snapshot()
+        val transientRows = rows.filter { it.kind == "llm_call_failed_transient" }
+        transientRows.size shouldBe 2
+        transientRows.all { it.extra["error_kind"] == "budget_exhausted" } shouldBe true
+        rows.any { it.kind == "llm_call_all_failed" } shouldBe true
+    }
+
+    @Test
+    fun `Task20 ProviderCallable throwing plain RuntimeException is wrapped as TransientFailure and chain continues`() = runTest {
+        val audit = InMemoryAuditLogSink()
+        val budget = InMemoryBudgetLedger()
+        val router = LlmRouter(
+            config = twoProviderConfig(),
+            providers = mapOf(
+                ProviderId("openrouter") to ProviderCallable { _, _ ->
+                    throw RuntimeException("socket reset")
+                },
+                ProviderId("claudemax-cli") to ProviderCallable { _, m ->
+                    resp("recovered", "claudemax-cli", m)
+                },
+            ),
+            cache = IdempotencyCache(),
+            budget = budget,
+            auditLog = audit,
+        )
+        val result = router.route(req())
+        result.text shouldBe "recovered"
+        val rows = audit.snapshot()
+        val transient = rows.first { it.kind == "llm_call_failed_transient" }
+        transient.extra["error_kind"] shouldBe "TransientFailure"
+        transient.extra["error"] shouldBe "socket reset"
+        // Reservation must be released so the openrouter ledger is back to 0.
+        budget.usedCents(subject, ProviderId("openrouter")) shouldBe 0
+    }
+
+    @Test
+    fun `Task20 audit row written for every attempt success-or-failure`() = runTest {
+        val audit = InMemoryAuditLogSink()
+        val router = LlmRouter(
+            config = twoProviderConfig(),
+            providers = mapOf(
+                ProviderId("openrouter") to ProviderCallable { _, _ ->
+                    throw LlmError.TransientFailure(RuntimeException("upstream"))
+                },
+                ProviderId("claudemax-cli") to ProviderCallable { _, m ->
+                    resp("ok", "claudemax-cli", m)
+                },
+            ),
+            cache = IdempotencyCache(),
+            budget = InMemoryBudgetLedger(),
+            auditLog = audit,
+        )
+        router.route(req())
+        val rows = audit.snapshot()
+        // First attempt → llm_call_failed_transient (openrouter)
+        // Second attempt → llm_call (claudemax-cli)
+        rows.size shouldBe 2
+        rows[0].kind shouldBe "llm_call_failed_transient"
+        rows[0].extra["provider"] shouldBe "openrouter"
+        rows[1].kind shouldBe "llm_call"
+    }
+
+    @Test
+    fun `Task20 dedup awaiters all see exception when sole dispatch throws`() = runTest {
+        val audit = InMemoryAuditLogSink()
+        val budget = InMemoryBudgetLedger()
+        val cache = IdempotencyCache()
+        val router = LlmRouter(
+            config = twoProviderConfig(),
+            providers = mapOf(
+                ProviderId("openrouter") to ProviderCallable { _, _ ->
+                    throw LlmError.PermanentFailure(IllegalStateException("invalid input"))
+                },
+                ProviderId("claudemax-cli") to ProviderCallable { _, _ -> error("never") },
+            ),
+            cache = cache,
+            budget = budget,
+            auditLog = audit,
+        )
+
+        val results = coroutineScope {
+            (1..4).map {
+                async { runCatching { router.route(req()) } }
+            }.awaitAll()
+        }
+        results.size shouldBe 4
+        results.all { it.isFailure } shouldBe true
+        // PermanentFailure is the canonical underlying error; awaiters share it.
+        results.all { it.exceptionOrNull() is LlmError.PermanentFailure } shouldBe true
+    }
+
+    @Test
+    fun `Task20 audit row count for happy path = exactly one llm_call`() = runTest {
+        val audit = InMemoryAuditLogSink()
+        val router = LlmRouter(
+            config = twoProviderConfig(),
+            providers = mapOf(
+                ProviderId("openrouter") to ProviderCallable { _, m -> resp("ok", "openrouter", m) },
+                ProviderId("claudemax-cli") to ProviderCallable { _, _ -> error("unused") },
+            ),
+            cache = IdempotencyCache(),
+            budget = InMemoryBudgetLedger(),
+            auditLog = audit,
+        )
+        router.route(req())
+        val rows = audit.snapshot()
+        rows.size shouldBe 1
+        rows[0].kind shouldBe "llm_call"
     }
 
     @Test
