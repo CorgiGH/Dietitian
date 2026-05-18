@@ -135,7 +135,7 @@ class SyncRoutesTest {
         val sku = UUID.randomUUID()
         val deviceId = "dev-${UUID.randomUUID()}"
         val payload = """{"event_uuid":"$evt","device_id":"$deviceId","originated_at":"2026-05-18T10:00:00Z","synced_at":"2026-05-18T10:00:01Z","sku_uuid":"$sku","delta_qty":1.0,"unit":"g","subject_id":"$subjectId"}"""
-        val body = """{"deviceId":"$deviceId","events":[{"tableName":"pantry_events","eventUuid":"$evt","payloadJson":${kotlinx.serialization.json.JsonPrimitive(payload).toString()}}]}"""
+        val body = """{"deviceId":"$deviceId","events":[{"tableName":"pantry_events","eventUuid":"$evt","payloadJson":${kotlinx.serialization.json.JsonPrimitive(payload)}}]}"""
         val resp = client.post("/sync/push") {
             cookie(SESSION_COOKIE, sessionId)
             contentType(ContentType.Application.Json)
@@ -219,7 +219,7 @@ class SyncRoutesTest {
         val sku = UUID.randomUUID()
         val deviceId = "dev-${UUID.randomUUID()}"
         val payload = """{"event_uuid":"$evt","device_id":"$deviceId","originated_at":"2026-05-18T10:00:00Z","synced_at":"2026-05-18T10:00:01Z","sku_uuid":"$sku","delta_qty":1.0,"unit":"g","subject_id":"$subjectId"}"""
-        val body = """{"deviceId":"$deviceId","events":[{"tableName":"pantry_events","eventUuid":"$evt","payloadJson":${kotlinx.serialization.json.JsonPrimitive(payload).toString()}}]}"""
+        val body = """{"deviceId":"$deviceId","events":[{"tableName":"pantry_events","eventUuid":"$evt","payloadJson":${kotlinx.serialization.json.JsonPrimitive(payload)}}]}"""
         // First push.
         client.post("/sync/push") {
             cookie(SESSION_COOKIE, sessionId)

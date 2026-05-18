@@ -69,8 +69,9 @@ fun Application.installRedactRoutes() {
                 conn.prepareStatement("SELECT subject_redact(?)").use { ps ->
                     ps.setObject(1, targetId)
                     ps.executeQuery().use { rs ->
-                        if (!rs.next()) JsonObject(emptyMap())
-                        else {
+                        if (!rs.next()) {
+                            JsonObject(emptyMap())
+                        } else {
                             val pg = rs.getObject(1)
                             val raw = (pg as? PGobject)?.value ?: pg.toString()
                             runCatching {

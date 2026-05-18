@@ -3,13 +3,13 @@ package com.dietician.server.sync
 import com.dietician.server.repo.EventRow
 import com.dietician.shared.data.api.Cursor
 import com.dietician.shared.data.api.EventEnvelope
+import com.dietician.shared.data.api.PullRequest
+import com.dietician.shared.data.api.PullResponse
 import com.dietician.shared.data.api.PulledRow
 import com.dietician.shared.data.api.PushAccepted
 import com.dietician.shared.data.api.PushRejected
 import com.dietician.shared.data.api.PushRequest
 import com.dietician.shared.data.api.PushResponse
-import com.dietician.shared.data.api.PullRequest
-import com.dietician.shared.data.api.PullResponse
 
 /**
  * Server-side helpers tying [com.dietician.shared.data.api] wire DTOs

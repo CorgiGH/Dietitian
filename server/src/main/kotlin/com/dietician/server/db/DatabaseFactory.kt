@@ -140,12 +140,15 @@ class DatabaseFactory(
             // [Council 1779120000 RC10] Tmpfs path for VPS-restart-safe key
             // unlock. See docs/runbooks/restart.md for the operator flow.
             val tmpfs = java.io.File("/run/dietician-keys/db.passphrase")
-            return if (tmpfs.exists()) tmpfs.readText().trim()
-            else System.getenv("DIETICIAN_DB_PASSWORD")
-                ?: error(
-                    "DIETICIAN_DB_PASSWORD not set and /run/dietician-keys/db.passphrase absent — " +
-                        "run /opt/dietician/bin/unlock first; see docs/runbooks/restart.md",
-                )
+            return if (tmpfs.exists()) {
+                tmpfs.readText().trim()
+            } else {
+                System.getenv("DIETICIAN_DB_PASSWORD")
+                    ?: error(
+                        "DIETICIAN_DB_PASSWORD not set and /run/dietician-keys/db.passphrase absent — " +
+                            "run /opt/dietician/bin/unlock first; see docs/runbooks/restart.md",
+                    )
+            }
         }
     }
 }

@@ -21,18 +21,24 @@ class RateLimiterTest {
         override fun getZone(): ZoneId = ZoneId.of("UTC")
         override fun withZone(zone: ZoneId): Clock = this
         override fun instant(): Instant = instant
-        fun advance(d: Duration) { instant = instant.plus(d) }
+        fun advance(d: Duration) {
+            instant = instant.plus(d)
+        }
     }
 
     @Test
     fun `permits up to limit then denies`() {
         val rl = RateLimiter(MutableClock(Instant.parse("2026-01-01T00:00:00Z")))
         repeat(3) { i ->
-            assertTrue(rl.permit("scope", "k", limit = 3, window = Duration.ofMinutes(1)),
-                "permit #$i within limit must succeed")
+            assertTrue(
+                rl.permit("scope", "k", limit = 3, window = Duration.ofMinutes(1)),
+                "permit #$i within limit must succeed",
+            )
         }
-        assertFalse(rl.permit("scope", "k", limit = 3, window = Duration.ofMinutes(1)),
-            "4th call must be denied once 3-of-3 are used in-window")
+        assertFalse(
+            rl.permit("scope", "k", limit = 3, window = Duration.ofMinutes(1)),
+            "4th call must be denied once 3-of-3 are used in-window",
+        )
     }
 
     @Test
@@ -43,8 +49,10 @@ class RateLimiterTest {
         assertFalse(rl.permit("scope", "k", 2, Duration.ofMinutes(1)))
         // Advance past the window boundary.
         clock.advance(Duration.ofMinutes(1).plusSeconds(1))
-        assertTrue(rl.permit("scope", "k", 2, Duration.ofMinutes(1)),
-            "after window expiry, new permits must be issued")
+        assertTrue(
+            rl.permit("scope", "k", 2, Duration.ofMinutes(1)),
+            "after window expiry, new permits must be issued",
+        )
     }
 
     @Test
@@ -53,8 +61,10 @@ class RateLimiterTest {
         repeat(2) { assertTrue(rl.permit("scope", "alice", 2, Duration.ofMinutes(1))) }
         assertFalse(rl.permit("scope", "alice", 2, Duration.ofMinutes(1)))
         // Bob has a fresh budget — Alice's limit is local to her key.
-        assertTrue(rl.permit("scope", "bob", 2, Duration.ofMinutes(1)),
-            "Bob's permit must be allowed even though Alice is throttled")
+        assertTrue(
+            rl.permit("scope", "bob", 2, Duration.ofMinutes(1)),
+            "Bob's permit must be allowed even though Alice is throttled",
+        )
     }
 
     @Test
@@ -63,8 +73,10 @@ class RateLimiterTest {
         repeat(2) { assertTrue(rl.permit("default", "victor", 2, Duration.ofMinutes(1))) }
         assertFalse(rl.permit("default", "victor", 2, Duration.ofMinutes(1)))
         // Magic-link is its own scope — separate window/budget.
-        assertTrue(rl.permit("magic-link-request", "victor", 5, Duration.ofHours(1)),
-            "different scope must have its own bucket")
+        assertTrue(
+            rl.permit("magic-link-request", "victor", 5, Duration.ofHours(1)),
+            "different scope must have its own bucket",
+        )
     }
 
     @Test

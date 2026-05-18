@@ -108,7 +108,7 @@ fun Application.installAuditExportRoutes() {
                         val bytes = AuditPdfRenderer.render(subjectId, rows, from, to)
                         call.response.headers.append(
                             HttpHeaders.ContentDisposition,
-                            "attachment; filename=audit-${subjectId}-${LocalDate.now(ZoneOffset.UTC)}.pdf",
+                            "attachment; filename=audit-$subjectId-${LocalDate.now(ZoneOffset.UTC)}.pdf",
                         )
                         call.respondBytes(bytes, ContentType.Application.Pdf)
                     }

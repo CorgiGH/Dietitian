@@ -85,14 +85,14 @@ fun Application.installMeRoutes() {
                             "display_name" to JsonPrimitive(subject.displayName),
                             "email_for_magic_link" to (
                                 subject.emailForMagicLink?.let { JsonPrimitive(it) } ?: JsonNull
-                            ),
+                                ),
                             "has_byok" to JsonPrimitive(creds.isNotEmpty()),
                             "byok_providers" to JsonObject(
                                 creds.associate { c -> c.provider to JsonPrimitive(c.createdAt.toString()) },
                             ),
                             "trial_queries_remaining_voyage" to (
                                 trialRemaining?.let { JsonPrimitive(it) } ?: JsonNull
-                            ),
+                                ),
                         ),
                     ),
                 )

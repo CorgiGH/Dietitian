@@ -68,82 +68,82 @@ fun Application.installAuthRoutes() {
     val rl: RateLimiter by inject()
 
     routing {
-      route("/auth") {
-        post("/magic-link/request") {
-            val req = call.receive<MagicLinkRequest>()
-            val normalized = req.email.trim().lowercase()
-            // Per-email anti-spam: 5 req/hour.
-            if (!rl.permit(
-                    scope = "magic-link-request",
-                    key = normalized,
-                    limit = RateLimiter.MAGIC_LINK_LIMIT,
-                    window = RateLimiter.MAGIC_LINK_WINDOW,
-                )
-            ) {
-                // Same 202 shape — do not leak "rate limited" because a 429
-                // for an unknown email would reveal it was tried multiple
-                // times. Silent drop preserves anti-enumeration.
+        route("/auth") {
+            post("/magic-link/request") {
+                val req = call.receive<MagicLinkRequest>()
+                val normalized = req.email.trim().lowercase()
+                // Per-email anti-spam: 5 req/hour.
+                if (!rl.permit(
+                        scope = "magic-link-request",
+                        key = normalized,
+                        limit = RateLimiter.MAGIC_LINK_LIMIT,
+                        window = RateLimiter.MAGIC_LINK_WINDOW,
+                    )
+                ) {
+                    // Same 202 shape — do not leak "rate limited" because a 429
+                    // for an unknown email would reveal it was tried multiple
+                    // times. Silent drop preserves anti-enumeration.
+                    call.respond(HttpStatusCode.Accepted, MagicLinkRequestResponse())
+                    return@post
+                }
+                auth.requestMagicLink(normalized)
                 call.respond(HttpStatusCode.Accepted, MagicLinkRequestResponse())
-                return@post
             }
-            auth.requestMagicLink(normalized)
-            call.respond(HttpStatusCode.Accepted, MagicLinkRequestResponse())
-        }
 
-        post("/magic-link/verify") {
-            val req = call.receive<MagicLinkVerifyRequest>()
-            val session = auth.verifyMagicLink(req.token)
-            if (session == null) {
-                call.respond(
-                    HttpStatusCode.Unauthorized,
-                    mapOf("error" to "invalid_or_expired_token"),
+            post("/magic-link/verify") {
+                val req = call.receive<MagicLinkVerifyRequest>()
+                val session = auth.verifyMagicLink(req.token)
+                if (session == null) {
+                    call.respond(
+                        HttpStatusCode.Unauthorized,
+                        mapOf("error" to "invalid_or_expired_token"),
+                    )
+                    return@post
+                }
+                Counters.authSignInTotal.increment()
+                call.response.cookies.append(
+                    Cookie(
+                        name = SESSION_COOKIE,
+                        value = session.sessionId,
+                        path = "/",
+                        httpOnly = true,
+                        secure = true,
+                        extensions = mapOf("SameSite" to "Strict"),
+                    ),
                 )
-                return@post
+                call.respond(
+                    HttpStatusCode.OK,
+                    MagicLinkVerifyResponse(
+                        sessionId = session.sessionId,
+                        subjectId = session.subjectId.toString(),
+                        expiresAtMs = session.expiresAt.toEpochMilli(),
+                    ),
+                )
             }
-            Counters.authSignInTotal.increment()
-            call.response.cookies.append(
-                Cookie(
-                    name = SESSION_COOKIE,
-                    value = session.sessionId,
-                    path = "/",
-                    httpOnly = true,
-                    secure = true,
-                    extensions = mapOf("SameSite" to "Strict"),
-                ),
-            )
-            call.respond(
-                HttpStatusCode.OK,
-                MagicLinkVerifyResponse(
-                    sessionId = session.sessionId,
-                    subjectId = session.subjectId.toString(),
-                    expiresAtMs = session.expiresAt.toEpochMilli(),
-                ),
-            )
-        }
 
-        post("/sign-out") {
-            val sessionId = call.extractSessionId()
-            if (sessionId == null) {
+            post("/sign-out") {
+                val sessionId = call.extractSessionId()
+                if (sessionId == null) {
+                    call.respond(HttpStatusCode.NoContent)
+                    return@post
+                }
+                auth.signOut(sessionId)
+                Counters.authSignOutTotal.increment()
+                call.response.cookies.append(
+                    Cookie(name = SESSION_COOKIE, value = "", path = "/", maxAge = 0),
+                )
                 call.respond(HttpStatusCode.NoContent)
-                return@post
             }
-            auth.signOut(sessionId)
-            Counters.authSignOutTotal.increment()
-            call.response.cookies.append(
-                Cookie(name = SESSION_COOKIE, value = "", path = "/", maxAge = 0),
-            )
-            call.respond(HttpStatusCode.NoContent)
-        }
 
-        post("/sign-out-all-sessions") {
-            val subjectId = call.requireSubject(auth) ?: return@post
-            val killed = auth.signOutAll(subjectId)
-            Counters.authSignOutAllTotal.increment()
-            call.response.cookies.append(
-                Cookie(name = SESSION_COOKIE, value = "", path = "/", maxAge = 0),
-            )
-            call.respond(HttpStatusCode.OK, SignOutAllResponse(sessionsKilled = killed))
+            post("/sign-out-all-sessions") {
+                val subjectId = call.requireSubject(auth) ?: return@post
+                val killed = auth.signOutAll(subjectId)
+                Counters.authSignOutAllTotal.increment()
+                call.response.cookies.append(
+                    Cookie(name = SESSION_COOKIE, value = "", path = "/", maxAge = 0),
+                )
+                call.respond(HttpStatusCode.OK, SignOutAllResponse(sessionsKilled = killed))
+            }
         }
-      }
     }
 }
