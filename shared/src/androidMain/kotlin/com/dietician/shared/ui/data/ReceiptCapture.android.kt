@@ -1,13 +1,22 @@
 package com.dietician.shared.ui.data
 
+import com.dietician.shared.ui.platform.AndroidPlatformHandle
+
 /**
- * Android camera/SAF capture stub for Batch C.
+ * Android camera capture actual — Batch E wiring.
  *
- * Real implementation lands in Batch E Task 23 (CameraX or Storage Access
- * Framework with `ActivityResultContracts.GetContent`). The actual wires through
- * a Compose-friendly registerForActivityResult-equivalent.
+ * Delegates to [AndroidPlatformHandle.runCapture] which is installed by
+ * [com.dietician.android.DieticianAndroidApplication] with a callback wrapping
+ * [com.dietician.android.CameraXCapture.capture]. The wrapping is synchronous;
+ * the camera call itself is suspended on the Activity side and resolved before
+ * the lambda returns.
  *
- * First-ship returns null so ReceiptUploadScreen can exercise the rest of the
- * upload pipe via injected test bytes.
+ * Returns null when:
+ *   - Application not yet initialized (e.g. unit test without
+ *     [AndroidPlatformHandle.installForTest])
+ *   - User denied CAMERA permission
+ *   - CameraX bind / take-picture failed
+ *
+ * Caller (ReceiptUploadScreen) tolerates null + shows "Capture failed" toast.
  */
-actual fun captureImage(): ByteArray? = null
+actual fun captureImage(): ByteArray? = AndroidPlatformHandle.runCapture()
