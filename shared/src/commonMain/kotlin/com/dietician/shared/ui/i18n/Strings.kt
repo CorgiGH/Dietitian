@@ -148,6 +148,12 @@ interface Strings {
     // --- Pantry + Coach + PlannedCut + AILiteracy (iter 3 follow-up batch 2) ---
     val pantry_empty_state: String
     val pantry_add_manually_fab: String
+    val pantry_add_dialog_title: String
+    val pantry_add_name_label: String
+    val pantry_add_qty_label: String
+    val pantry_add_unit_label: String
+    val pantry_add_save_button: String
+    val pantry_add_cancel_button: String
     val planned_cut_days_remaining_suffix: String
     val coach_screen_title: String
     val coach_input_placeholder: String
@@ -323,6 +329,12 @@ object Strings_en : Strings {
 
     override val pantry_empty_state: String = "Pantry is empty — tap + to add an item"
     override val pantry_add_manually_fab: String = "+ Add manually"
+    override val pantry_add_dialog_title: String = "Add pantry item"
+    override val pantry_add_name_label: String = "Name"
+    override val pantry_add_qty_label: String = "Quantity"
+    override val pantry_add_unit_label: String = "Unit (g / ml / pcs)"
+    override val pantry_add_save_button: String = "Save"
+    override val pantry_add_cancel_button: String = "Cancel"
     override val planned_cut_days_remaining_suffix: String = "days remaining"
     override val coach_screen_title: String = "Coach"
     override val coach_input_placeholder: String = "Ask the coach..."
@@ -495,6 +507,12 @@ object Strings_ro : Strings {
 
     override val pantry_empty_state: String = "Cămara e goală — apasă + pentru a adăuga"
     override val pantry_add_manually_fab: String = "+ Adaugă manual"
+    override val pantry_add_dialog_title: String = "Adaugă în cămară"
+    override val pantry_add_name_label: String = "Nume"
+    override val pantry_add_qty_label: String = "Cantitate"
+    override val pantry_add_unit_label: String = "Unitate (g / ml / buc)"
+    override val pantry_add_save_button: String = "Salvează"
+    override val pantry_add_cancel_button: String = "Anulează"
     override val planned_cut_days_remaining_suffix: String = "zile rămase"
     override val coach_screen_title: String = "Coach"
     override val coach_input_placeholder: String = "Întreabă coach-ul..."

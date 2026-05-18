@@ -9,21 +9,30 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.components.PantryItemCard
+import com.dietician.shared.ui.data.PantryItem
 import com.dietician.shared.ui.i18n.strings
+import kotlinx.coroutines.launch
 
 /**
  * Pantry browsing surface.
@@ -118,4 +127,79 @@ fun PantryScreen(
             icon = {},
         )
     }
+    if (state.addSheetVisible) {
+        AddPantryItemDialog(
+            onDismiss = viewModel::hideAddSheet,
+            onSave = { item ->
+                viewModel.addItem(item)
+                viewModel.hideAddSheet()
+            },
+            onAfterSave = { viewModel.load() },
+        )
+    }
+}
+
+@Composable
+private fun AddPantryItemDialog(
+    onDismiss: () -> Unit,
+    onSave: (PantryItem) -> Unit,
+    onAfterSave: suspend () -> Unit,
+) {
+    val s = strings()
+    val scope = rememberCoroutineScope()
+    var name by remember { mutableStateOf("") }
+    var qty by remember { mutableStateOf("") }
+    var unit by remember { mutableStateOf("g") }
+    val canSave = name.isNotBlank() && qty.toDoubleOrNull()?.let { it > 0 } == true
+    AlertDialog(
+        modifier = Modifier.testTag("pantry-add-dialog"),
+        onDismissRequest = onDismiss,
+        title = { Text(s.pantry_add_dialog_title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(s.pantry_add_name_label) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("pantry-add-name"),
+                )
+                OutlinedTextField(
+                    value = qty,
+                    onValueChange = { qty = it.filter { ch -> ch.isDigit() || ch == '.' } },
+                    label = { Text(s.pantry_add_qty_label) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("pantry-add-qty"),
+                )
+                OutlinedTextField(
+                    value = unit,
+                    onValueChange = { unit = it },
+                    label = { Text(s.pantry_add_unit_label) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("pantry-add-unit"),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val item = PantryItem(
+                        skuUuid = "manual-${name.trim().lowercase().hashCode()}-$qty",
+                        displayName = name.trim(),
+                        qty = qty.toDouble(),
+                        unit = unit.trim().ifBlank { "g" },
+                    )
+                    onSave(item)
+                    scope.launch { onAfterSave() }
+                },
+                enabled = canSave,
+                modifier = Modifier.testTag("pantry-add-save"),
+            ) { Text(s.pantry_add_save_button) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag("pantry-add-cancel")) {
+                Text(s.pantry_add_cancel_button)
+            }
+        },
+    )
 }
