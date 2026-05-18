@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Lint
+        run: ./gradlew ktlintCheck detekt
+      - name: Shared KMP common test
+        run: ./gradlew :shared:desktopTest
+      - name: Android unit test
+        run: ./gradlew :shared:testDebugUnitTest
+      - name: Server tests (Flyway + schema parity, Docker-backed)
+        run: ./gradlew :server:test
+      - name: Assemble all
+        run: ./gradlew :server:assemble :desktopApp:assemble :androidApp:assembleDebug

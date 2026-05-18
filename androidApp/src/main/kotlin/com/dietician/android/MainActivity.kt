@@ -34,7 +34,7 @@ private fun DieticianHomeScreen() {
     Column(
         Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalAlignment = Alignment.Start
+        horizontalAlignment = Alignment.Start,
     ) {
         Text("Dietician ${Dietician.VERSION}", style = MaterialTheme.typography.headlineMedium)
         Text("Spec date: ${Dietician.SPEC_DATE}")

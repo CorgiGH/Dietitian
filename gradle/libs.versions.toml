@@ -3,8 +3,8 @@ kotlin = "2.0.21"
 agp = "8.7.2"
 compose-multiplatform = "1.7.0"
 android-min = "26"
-android-target = "34"
-android-compile = "34"
+android-target = "35"
+android-compile = "35"
 
 # Networking + serialization
 ktor = "3.0.1"
@@ -51,7 +51,7 @@ imgscalr = "4.2"
 
 # Other
 windpapi4j = "1.1.0"
-jagged = "0.5.0"
+jagged = "0.4.1"
 directory-watcher = "0.18.0"
 playwright = "1.48.0"
 
@@ -64,6 +64,15 @@ voyager = "1.1.0-beta02"
 junit = "5.11.3"
 mockk = "1.13.13"
 turbine = "1.2.0"
+flyway = "10.20.0"
+testcontainers = "1.21.4"
+kotest = "5.9.1"
+robolectric = "4.14"
+androidx-test-core = "1.6.1"
+junit-platform-launcher = "1.11.3"
+androidx-lifecycle = "2.8.7"
+ktlint-gradle = "12.1.1"
+detekt = "1.23.7"
 
 [libraries]
 # Kotlin stdlib + coroutines + serialization
@@ -150,6 +159,17 @@ junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.r
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+flyway-core = { group = "org.flywaydb", name = "flyway-core", version.ref = "flyway" }
+flyway-database-postgresql = { group = "org.flywaydb", name = "flyway-database-postgresql", version.ref = "flyway" }
+testcontainers-postgresql = { group = "org.testcontainers", name = "postgresql", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { group = "org.testcontainers", name = "junit-jupiter", version.ref = "testcontainers" }
+kotest-runner-junit5 = { group = "io.kotest", name = "kotest-runner-junit5", version.ref = "kotest" }
+kotest-assertions-core = { group = "io.kotest", name = "kotest-assertions-core", version.ref = "kotest" }
+kotest-property = { group = "io.kotest", name = "kotest-property", version.ref = "kotest" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidx-test-core" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit-platform-launcher" }
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "androidx-lifecycle" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -162,3 +182,5 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

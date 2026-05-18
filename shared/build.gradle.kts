@@ -50,10 +50,13 @@ kotlin {
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.uiToolingPreview)
 
-                // Choco-solver — MUST exclude xchart (Android-banned per smoke test 2026-05-17)
-                implementation(libs.choco.solver) {
-                    exclude(group = "org.knowm.xchart")
-                }
+                // Choco-solver — JVM-only, belongs in jvmMain/androidMain not commonMain.
+                // TEMP commented for Plan-1 (`:shared:data` ledger). Re-enable + relocate to
+                // platform source sets in the meal-planning plan (later). MUST exclude xchart
+                // (Android-banned per smoke test 2026-05-17). Tracking: scaffold-fix-choco-solver.
+                // implementation(libs.choco.solver) {
+                //     exclude(group = "org.knowm.xchart")
+                // }
 
                 // Resilience
                 implementation(libs.resilience4j.circuitbreaker)
@@ -67,6 +70,8 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.turbine)
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.kotest.property)
             }
         }
 
@@ -75,6 +80,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.android)
                 implementation(libs.ktor.client.okhttp)
                 implementation(libs.sqldelight.driver.android)
+                implementation(libs.androidx.lifecycle.process)
             }
         }
 
@@ -83,6 +89,26 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.sqldelight.driver.sqlite)
                 implementation(libs.onnxruntime)
+            }
+        }
+
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.junit.jupiter)
+                implementation(libs.robolectric)
+                implementation(libs.androidx.test.core)
+                implementation(libs.kotest.runner.junit5)
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.sqldelight.driver.android)
+            }
+        }
+
+        val desktopTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.sqldelight.driver.sqlite)
             }
         }
     }
@@ -97,6 +123,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 }
 

@@ -1,0 +1,62 @@
+-- Outbox: rows pending push to VPS.
+-- outbox_dead: rows that failed 10 attempts. NEVER silent-drop (council BREAK fix).
+
+CREATE TABLE outbox (
+    event_uuid    TEXT PRIMARY KEY NOT NULL,
+    table_name    TEXT NOT NULL,
+    payload_json  TEXT NOT NULL,
+    queued_at     INTEGER NOT NULL,
+    attempts      INTEGER NOT NULL DEFAULT 0,
+    last_error    TEXT
+);
+CREATE INDEX idx_outbox_queued_at ON outbox(queued_at);
+
+CREATE TABLE outbox_dead (
+    event_uuid       TEXT PRIMARY KEY NOT NULL,
+    table_name       TEXT NOT NULL,
+    payload_json     TEXT NOT NULL,
+    queued_at        INTEGER NOT NULL,
+    first_failed_at  INTEGER NOT NULL,
+    last_attempt_at  INTEGER NOT NULL,
+    attempt_count    INTEGER NOT NULL,
+    last_error       TEXT NOT NULL,
+    reported_at      INTEGER,       -- NULL = not yet reported to VPS
+    resolved_at      INTEGER        -- NULL = unresolved
+);
+CREATE INDEX idx_outbox_dead_unreported ON outbox_dead(reported_at) WHERE reported_at IS NULL;
+
+enqueueOutbox:
+INSERT INTO outbox(event_uuid, table_name, payload_json, queued_at, attempts, last_error)
+VALUES (?, ?, ?, ?, 0, NULL);
+
+selectOutboxBatch:
+SELECT * FROM outbox ORDER BY queued_at ASC, event_uuid ASC LIMIT ?;
+
+deleteOutboxRow:
+DELETE FROM outbox WHERE event_uuid = ?;
+
+recordOutboxFailure:
+UPDATE outbox SET attempts = attempts + 1, last_error = ? WHERE event_uuid = ?;
+
+selectOutboxRow:
+SELECT * FROM outbox WHERE event_uuid = ?;
+
+promoteToDeadLetter:
+INSERT INTO outbox_dead(event_uuid, table_name, payload_json, queued_at, first_failed_at, last_attempt_at, attempt_count, last_error, reported_at, resolved_at)
+SELECT event_uuid, table_name, payload_json, queued_at, queued_at, :nowMs, attempts, COALESCE(last_error, 'unknown'), NULL, NULL
+FROM outbox WHERE event_uuid = ?;
+
+deleteFromOutboxAfterDeadLetter:
+DELETE FROM outbox WHERE event_uuid = ?;
+
+selectDeadLetters:
+SELECT * FROM outbox_dead WHERE resolved_at IS NULL ORDER BY first_failed_at DESC;
+
+markDeadLetterResolved:
+UPDATE outbox_dead SET resolved_at = ? WHERE event_uuid = ?;
+
+selectUnreportedDeadLetters:
+SELECT * FROM outbox_dead WHERE reported_at IS NULL;
+
+markDeadLetterReported:
+UPDATE outbox_dead SET reported_at = ? WHERE event_uuid = ?;

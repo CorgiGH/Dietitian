@@ -1,0 +1,23 @@
+-- This device's current location (the device is canonical for its own row;
+-- /sync/push carries this to VPS so other devices see where this device is).
+--
+-- Plan used UPSERT. Portable rewrite: seed-if-absent + UPDATE. Caller wraps in tx.
+
+CREATE TABLE user_location_current (
+    device_id     TEXT PRIMARY KEY NOT NULL,
+    location_id   TEXT NOT NULL,
+    set_at        INTEGER NOT NULL,
+    source        TEXT NOT NULL              -- 'manual' | 'gps-auto'
+);
+
+locationSeedIfAbsent:
+INSERT OR IGNORE INTO user_location_current(device_id, location_id, set_at, source)
+VALUES (?, '', 0, 'manual');
+
+upsertUserLocation:
+UPDATE user_location_current
+   SET location_id = ?, set_at = ?, source = ?
+ WHERE device_id = ?;
+
+selectUserLocation:
+SELECT * FROM user_location_current WHERE device_id = ?;

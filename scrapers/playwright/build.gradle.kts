@@ -12,12 +12,14 @@ kotlin {
 
 application {
     mainClass.set("com.dietician.scrapers.playwright.MainKt")
-    applicationDefaultJvmArgs = listOf(
-        "-Xms128m",
-        "-Xmx512m",      // RSS ceiling enforced per Council 3 BREAK #16
-        "-XX:+UseG1GC",
-        "-Dfile.encoding=UTF-8"
-    )
+    // -Xmx512m enforces the RSS ceiling per Council 3 BREAK #16.
+    applicationDefaultJvmArgs =
+        listOf(
+            "-Xms128m",
+            "-Xmx512m",
+            "-XX:+UseG1GC",
+            "-Dfile.encoding=UTF-8",
+        )
 }
 
 dependencies {

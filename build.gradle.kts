@@ -10,6 +10,8 @@ plugins {
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.sqldelight) apply false
     alias(libs.plugins.ktor) apply false
+    alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.detekt) apply false
 }
 
 allprojects {
@@ -17,5 +19,18 @@ allprojects {
         google()
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    }
+}
+
+subprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "io.gitlab.arturbosch.detekt")
+
+    // Overlay the small detekt overrides on top of the bundled default config.
+    // Rules + rationale documented inline in config/detekt/detekt.yml.
+    extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+        buildUponDefaultConfig = true
+        allRules = false
+        config.setFrom(files("${rootProject.projectDir}/config/detekt/detekt.yml"))
     }
 }

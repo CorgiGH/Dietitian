@@ -14,10 +14,13 @@
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
+    <!--
+      Launcher icons (@mipmap/ic_launcher, @mipmap/ic_launcher_round) are added
+      in a later UI plan; Plan-1 ships data layer only and falls back to the
+      Android system default launcher icon.
+    -->
     <application
         android:label="@string/app_name"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.Dietician">
 
         <activity

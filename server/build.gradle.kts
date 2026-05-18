@@ -8,18 +8,19 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
 application {
     mainClass.set("com.dietician.server.MainKt")
-    applicationDefaultJvmArgs = listOf(
-        "-Xms256m",
-        "-Xmx512m",
-        "-XX:+UseG1GC",
-        "-XX:MaxGCPauseMillis=200",
-        "-Dfile.encoding=UTF-8"
-    )
+    applicationDefaultJvmArgs =
+        listOf(
+            "-Xms256m",
+            "-Xmx512m",
+            "-XX:+UseG1GC",
+            "-XX:MaxGCPauseMillis=200",
+            "-Dfile.encoding=UTF-8",
+        )
 }
 
 dependencies {
@@ -38,6 +39,10 @@ dependencies {
     // Postgres (canonical store)
     implementation(libs.postgresql.jdbc)
     implementation(libs.hikari)
+
+    // Flyway migrations
+    implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
@@ -62,6 +67,13 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.kotlinx.serialization.json)
+    testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.testcontainers.junit.jupiter)
+    testImplementation(libs.junit.platform.launcher)
+    testImplementation(libs.kotest.assertions.core)
+    // SchemaParityTest (T11): instantiate SQLDelight schema in-memory on the JVM
+    testImplementation(libs.sqldelight.driver.sqlite)
 }
 
 tasks.test {
@@ -73,3 +85,9 @@ ktor {
         archiveFileName.set("dietician-server.jar")
     }
 }
+
+// flexmark-all pulls multiple jars whose runtime entries collide (e.g.
+// `library-desktop-*.jar`). Application-plugin dist tasks copy them all into
+// `lib/`; tell Gradle to drop the duplicates instead of failing the build.
+tasks.named<Tar>("distTar") { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+tasks.named<Zip>("distZip") { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }

@@ -1,0 +1,59 @@
+-- pantry_metadata uses HLC-keyed LWW per council BREAK #2 (Risk Analyst CATASTROPHIC #1).
+-- LWW key tuple (hlc_wall_ms, hlc_seq, last_modified_device) — stable under any single
+-- client's wall-clock skew because hlc_wall_ms is updated via HybridLogicalClock.recv().
+-- server_recv_at is NULL for local-only rows and gets populated on /sync/push ACK.
+-- For remote merges the tie-breaker extends to COALESCE(server_recv_at, 0) (council
+-- "tie → remote" rule).
+--
+-- UPSERT (ON CONFLICT ... DO UPDATE) requires SQLite >= 3.24; android-min=26 ships 3.18.
+-- Portable pattern: metadataSeedIfAbsent (INSERT OR IGNORE with sentinel defaults) +
+-- upsertPantryMetadataLocal / mergePantryMetadataFromRemote (UPDATE guarded by HLC tuple
+-- comparison in WHERE). Caller wraps in db.transaction. Seed sentinels (hlc=0, dev='')
+-- guarantee the first real write always wins the tuple comparison.
+
+CREATE TABLE pantry_metadata (
+    sku_uuid             TEXT PRIMARY KEY NOT NULL,
+    expiry_date          TEXT,
+    open_status          TEXT NOT NULL DEFAULT 'sealed',
+    open_date            TEXT,
+    hlc_wall_ms          INTEGER NOT NULL,
+    hlc_seq              INTEGER NOT NULL,
+    last_modified_device TEXT NOT NULL,
+    server_recv_at       INTEGER         -- NULL until VPS ACK
+);
+
+metadataSeedIfAbsent:
+INSERT OR IGNORE INTO pantry_metadata(sku_uuid, expiry_date, open_status, open_date, hlc_wall_ms, hlc_seq, last_modified_device, server_recv_at)
+VALUES (?, NULL, 'sealed', NULL, 0, 0, '', NULL);
+
+upsertPantryMetadataLocal:
+UPDATE pantry_metadata
+   SET expiry_date          = :expiryDate,
+       open_status          = :openStatus,
+       open_date            = :openDate,
+       hlc_wall_ms          = :hlcWallMs,
+       hlc_seq              = :hlcSeq,
+       last_modified_device = :lastModifiedDevice,
+       server_recv_at       = NULL
+ WHERE sku_uuid = :skuUuid
+   AND (:hlcWallMs, :hlcSeq, :lastModifiedDevice)
+     > (hlc_wall_ms, hlc_seq, last_modified_device);
+
+mergePantryMetadataFromRemote:
+UPDATE pantry_metadata
+   SET expiry_date          = :expiryDate,
+       open_status          = :openStatus,
+       open_date            = :openDate,
+       hlc_wall_ms          = :hlcWallMs,
+       hlc_seq              = :hlcSeq,
+       last_modified_device = :lastModifiedDevice,
+       server_recv_at       = :serverRecvAt
+ WHERE sku_uuid = :skuUuid
+   AND (:hlcWallMs, :hlcSeq, :lastModifiedDevice, COALESCE(:serverRecvAt, 0))
+     > (hlc_wall_ms, hlc_seq, last_modified_device, COALESCE(server_recv_at, 0));
+
+selectPantryMetadata:
+SELECT * FROM pantry_metadata WHERE sku_uuid = ?;
+
+markMetadataServerAck:
+UPDATE pantry_metadata SET server_recv_at = ? WHERE sku_uuid = ? AND hlc_wall_ms = ? AND hlc_seq = ?;

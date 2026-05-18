@@ -1,0 +1,62 @@
+-- Materialized pantry "current" table (council BREAK fix #1: avoid O(n) per-read SUM).
+--
+-- Maintenance: snapshot-delta is applied EXPLICITLY by EventStore.enqueuePantryEvent
+-- inside the same transaction as the event-row + outbox-row insert (Task 14). This
+-- mirrors what an AFTER INSERT trigger would do, but stays SQLDelight-portable
+-- (SQLDelight 2.0.2 sqlite_3_18 dialect parser does not resolve NEW/OLD pseudo-tables
+-- inside trigger bodies). Same atomicity guarantee via the explicit transaction.
+--
+-- Compaction job (PantryCompactor.kt, Task 16) periodically rolls events older than
+-- checkpoint into the snapshot, so the snapshot stays bounded in storage and reads
+-- stay O(distinct skus).
+
+CREATE TABLE pantry_snapshot (
+    sku_uuid       TEXT NOT NULL,
+    unit           TEXT NOT NULL,
+    qty            REAL NOT NULL,
+    last_event_at  INTEGER NOT NULL,
+    PRIMARY KEY (sku_uuid, unit)
+);
+
+CREATE TABLE pantry_snapshot_checkpoint (
+    id             INTEGER PRIMARY KEY CHECK (id = 1),  -- singleton row
+    checkpoint_at  INTEGER NOT NULL                       -- max(originated_at) folded in
+);
+INSERT INTO pantry_snapshot_checkpoint(id, checkpoint_at) VALUES (1, 0);
+
+-- Two-step snapshot-delta. EventStore calls these inside the same tx as the event-row insert.
+-- Portable equivalent of UPSERT (UPSERT requires SQLite >= 3.24; android-min=26 ships 3.18).
+
+snapshotSeedIfAbsent:
+INSERT OR IGNORE INTO pantry_snapshot(sku_uuid, unit, qty, last_event_at)
+VALUES (?, ?, 0, 0);
+
+snapshotApplyDelta:
+UPDATE pantry_snapshot
+   SET qty = qty + :deltaQty,
+       last_event_at = MAX(last_event_at, :originatedAt)
+ WHERE sku_uuid = :skuUuid AND unit = :unit;
+
+selectPantryCurrentAll:
+SELECT sku_uuid, unit, qty, last_event_at
+FROM pantry_snapshot
+WHERE qty > 0
+ORDER BY last_event_at DESC;
+
+selectPantryCurrentBySku:
+SELECT sku_uuid, unit, qty, last_event_at
+FROM pantry_snapshot
+WHERE sku_uuid = ? AND qty > 0;
+
+selectCheckpoint:
+SELECT checkpoint_at FROM pantry_snapshot_checkpoint WHERE id = 1;
+
+advanceCheckpoint:
+UPDATE pantry_snapshot_checkpoint SET checkpoint_at = ? WHERE id = 1;
+
+selectEventsAfterCheckpoint:
+SELECT * FROM pantry_events WHERE originated_at > (SELECT checkpoint_at FROM pantry_snapshot_checkpoint WHERE id = 1)
+ORDER BY originated_at ASC;
+
+rebuildSnapshotFromEvents:
+DELETE FROM pantry_snapshot;
