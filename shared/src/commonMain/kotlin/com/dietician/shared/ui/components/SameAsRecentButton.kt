@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Same-as-recent meal cloning entry point. Tapping opens a BottomSheet with the
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun SameAsRecentButton(onTap: () -> Unit) {
+    val s = strings()
     Button(
         onClick = onTap,
         modifier = Modifier
@@ -41,7 +43,7 @@ fun SameAsRecentButton(onTap: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(imageVector = Icons.Filled.Refresh, contentDescription = null)
-            Text(text = "Same as recent")
+            Text(text = s.foodlog_same_as_recent_button)
         }
     }
 }

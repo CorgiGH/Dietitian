@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Today's macro summary for Home — kcal + protein + carbs + fat with NEUTRAL chips
@@ -22,9 +23,10 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun TodayNutrientsCard(state: TodayNutrientsState) {
+    val s = strings()
     Card(modifier = Modifier.fillMaxWidth().padding(8.dp).testTag("home-today-nutrients")) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Today's nutrients")
+            Text(text = s.today_nutrients_title)
             MacroRow("kcal", state.kcal, state.kcalTarget)
             MacroRow("protein", state.proteinG, state.proteinTargetG, unit = "g")
             MacroRow("carbs", state.carbsG, state.carbsTargetG, unit = "g")

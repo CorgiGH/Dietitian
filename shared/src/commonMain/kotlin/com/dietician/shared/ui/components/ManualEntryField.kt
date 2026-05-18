@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Manual food-entry text field with autocomplete-from-local-food-DB hook.
@@ -29,11 +30,12 @@ fun ManualEntryField(
     suggestions: List<String> = emptyList(),
     onSuggestionPicked: (String) -> Unit = {},
 ) {
+    val s = strings()
     Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
-            label = { Text("Type a food or meal") },
+            label = { Text(s.foodlog_manual_field_label) },
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("foodlog-manual-field"),

@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.components.PantryItemCard
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Pantry browsing surface.
@@ -42,6 +43,7 @@ fun PantryScreen(
     clockNowMs: () -> Long = { 0L },
 ) {
     val state by viewModel.state.collectAsState()
+    val s = strings()
     LaunchedEffect(Unit) { viewModel.load() }
     Box(modifier = Modifier.fillMaxSize().testTag("pantry-screen")) {
         Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
@@ -53,7 +55,7 @@ fun PantryScreen(
                         .testTag("pantry-empty-state"),
                 ) {
                     Text(
-                        text = "Pantry is empty — tap + to add an item",
+                        text = s.pantry_empty_state,
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -98,7 +100,7 @@ fun PantryScreen(
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
                 .testTag("pantry-add-fab"),
-            text = { Text("+ Add manually") },
+            text = { Text(s.pantry_add_manually_fab) },
             icon = {},
         )
     }

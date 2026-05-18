@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.components.ChatMessageBubble
 import com.dietician.shared.ui.components.CoachDisabledNotice
 import com.dietician.shared.ui.components.JustTellMeButton
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Coach chat surface — Plan-2 LlmRouterStream + Art 13 disclosure + RC7
@@ -56,9 +57,10 @@ fun CoachChatScreen(
         viewModel.load()
     }
 
+    val s = strings()
     Column(modifier = Modifier.fillMaxSize().testTag("coach-screen")) {
         TopAppBar(
-            title = { Text("Coach") },
+            title = { Text(s.coach_screen_title) },
             actions = {
                 JustTellMeButton(onClick = viewModel::justTellMe)
             },
@@ -89,6 +91,7 @@ fun CoachChatScreen(
 
 @Composable
 private fun StreamingIndicatorRow(onCancel: () -> Unit) {
+    val s = strings()
     Row(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -102,7 +105,7 @@ private fun StreamingIndicatorRow(onCancel: () -> Unit) {
         Button(
             onClick = onCancel,
             modifier = Modifier.testTag("coach-cancel"),
-        ) { Text("Cancel") }
+        ) { Text(s.coach_cancel_button) }
     }
 }
 
@@ -112,6 +115,7 @@ private fun InputRow(
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
 ) {
+    val s = strings()
     Row(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -123,13 +127,13 @@ private fun InputRow(
             modifier = Modifier
                 .weight(1f)
                 .testTag("coach-input"),
-            label = { Text("Ask the coach...") },
+            label = { Text(s.coach_input_placeholder) },
             singleLine = true,
         )
         Button(
             onClick = onSend,
             enabled = input.isNotBlank(),
             modifier = Modifier.testTag("coach-send"),
-        ) { Text("Send") }
+        ) { Text(s.coach_send_button) }
     }
 }

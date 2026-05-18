@@ -42,6 +42,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val plannedCut by viewModel.plannedCut.collectAsState()
+    val s = strings()
 
     Column(
         modifier = Modifier
@@ -69,7 +70,7 @@ fun HomeScreen(
                 .padding(8.dp)
                 .testTag("home-log-meal-cta"),
         ) {
-            Text("Log a meal")
+            Text(s.home_log_meal_cta)
         }
     }
 }

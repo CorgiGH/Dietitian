@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * AI Act Art 14 "Just tell me" button. Bypasses [com.dietician.shared.llm.LlmStream]
@@ -22,10 +23,11 @@ fun JustTellMeButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = strings()
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.testTag("coach-just-tell-me-button"),
     ) {
-        Text("Just tell me")
+        Text(s.coach_just_tell_me_button)
     }
 }
