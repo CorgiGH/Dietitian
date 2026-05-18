@@ -48,7 +48,7 @@ fun CoachDisabledNotice(
             TextButton(
                 onClick = onOpenSettings,
                 modifier = Modifier.testTag("coach-disabled-open-settings"),
-            ) { Text("Re-enable in Settings") }
+            ) { Text(s.coach_re_enable_in_settings_button) }
         }
     }
 }

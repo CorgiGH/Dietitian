@@ -60,7 +60,7 @@ fun AILiteracyBanner(
                 onClick = onAcknowledge,
                 modifier = Modifier.testTag("ai-literacy-ok-button"),
             ) {
-                Text("I understand")
+                Text(s.ai_literacy_understood_button)
             }
         },
     )

@@ -99,6 +99,18 @@ interface Strings {
     val foodlog_photo_button: String
     val foodlog_same_as_recent_button: String
 
+    // --- Pantry + Coach + PlannedCut + AILiteracy (iter 3 follow-up batch 2) ---
+    val pantry_empty_state: String
+    val pantry_add_manually_fab: String
+    val planned_cut_days_remaining_suffix: String
+    val coach_screen_title: String
+    val coach_input_placeholder: String
+    val coach_send_button: String
+    val coach_cancel_button: String
+    val coach_just_tell_me_button: String
+    val coach_re_enable_in_settings_button: String
+    val ai_literacy_understood_button: String
+
     // --- Settings screen (nav-mount-iter-3) ---
     val settings_language_label: String
     val settings_locale_en_label: String
@@ -215,6 +227,17 @@ object Strings_en : Strings {
     override val foodlog_photo_button: String = "Photo of meal"
     override val foodlog_same_as_recent_button: String = "Same as recent"
 
+    override val pantry_empty_state: String = "Pantry is empty — tap + to add an item"
+    override val pantry_add_manually_fab: String = "+ Add manually"
+    override val planned_cut_days_remaining_suffix: String = "days remaining"
+    override val coach_screen_title: String = "Coach"
+    override val coach_input_placeholder: String = "Ask the coach..."
+    override val coach_send_button: String = "Send"
+    override val coach_cancel_button: String = "Cancel"
+    override val coach_just_tell_me_button: String = "Just tell me"
+    override val coach_re_enable_in_settings_button: String = "Re-enable in Settings"
+    override val ai_literacy_understood_button: String = "I understand"
+
     override val settings_language_label: String = "Language"
     override val settings_locale_en_label: String = "English"
     override val settings_locale_ro_label: String = "Română"
@@ -327,6 +350,17 @@ object Strings_ro : Strings {
     override val foodlog_barcode_button: String = "Scanează cod de bare"
     override val foodlog_photo_button: String = "Fotografie masă"
     override val foodlog_same_as_recent_button: String = "La fel ca recent"
+
+    override val pantry_empty_state: String = "Cămara e goală — apasă + pentru a adăuga"
+    override val pantry_add_manually_fab: String = "+ Adaugă manual"
+    override val planned_cut_days_remaining_suffix: String = "zile rămase"
+    override val coach_screen_title: String = "Coach"
+    override val coach_input_placeholder: String = "Întreabă coach-ul..."
+    override val coach_send_button: String = "Trimite"
+    override val coach_cancel_button: String = "Anulează"
+    override val coach_just_tell_me_button: String = "Doar spune-mi"
+    override val coach_re_enable_in_settings_button: String = "Reactivează din Setări"
+    override val ai_literacy_understood_button: String = "Am înțeles"
 
     override val settings_language_label: String = "Limbă"
     override val settings_locale_en_label: String = "English"

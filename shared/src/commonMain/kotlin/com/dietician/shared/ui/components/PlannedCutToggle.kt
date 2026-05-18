@@ -54,7 +54,7 @@ fun PlannedCutToggle(
                 Text(text = s.planned_cut_toggle)
                 if (state.active) {
                     Text(
-                        text = "${state.daysRemaining} days remaining",
+                        text = "${state.daysRemaining} ${s.planned_cut_days_remaining_suffix}",
                         modifier = Modifier.testTag("home-planned-cut-days-remaining"),
                     )
                 }
