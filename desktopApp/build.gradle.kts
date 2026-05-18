@@ -26,6 +26,9 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
+    // Koin DI (matches shared module's koin-core dep).
+    implementation(libs.koin.core)
+
     // Desktop-only subprocess control: ClaudeMax CLI, Playwright, whisper.cpp, yt-dlp
     // (Subprocesses invoked via java.lang.ProcessBuilder — no extra deps)
 
