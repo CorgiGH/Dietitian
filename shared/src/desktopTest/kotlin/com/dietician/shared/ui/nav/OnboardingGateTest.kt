@@ -45,7 +45,6 @@ class OnboardingGateTest {
         setContent { DieticianApp(locale = AppLocale.EN) }
         onNodeWithTag("onboarding-screen").assertIsDisplayed()
         onNodeWithTag("dietician-bottom-nav").assertDoesNotExist()
-
     }
 
     @Test
