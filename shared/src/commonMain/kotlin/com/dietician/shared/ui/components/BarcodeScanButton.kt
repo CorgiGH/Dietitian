@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Barcode scan entry point — Android opens CameraX + ZXing (Batch E Task 23) /
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun BarcodeScanButton(onTap: () -> Unit) {
+    val s = strings()
     Button(
         onClick = onTap,
         modifier = Modifier
@@ -39,7 +41,7 @@ fun BarcodeScanButton(onTap: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(imageVector = Icons.Filled.Menu, contentDescription = null)
-            Text(text = "Scan barcode")
+            Text(text = s.foodlog_barcode_button)
         }
     }
 }

@@ -69,25 +69,28 @@ fun SettingsScreen(
 
         LocaleSwitcherRow(
             current = state.locale,
+            languageLabel = s.settings_language_label,
+            enLabel = s.settings_locale_en_label,
+            roLabel = s.settings_locale_ro_label,
             onSelect = viewModel::setLocale,
         )
 
         ToggleRow(
-            label = "Dark theme",
+            label = s.settings_dark_theme_label,
             checked = state.darkTheme,
             onCheckedChange = viewModel::setDarkTheme,
             testTagName = "settings-dark-theme",
         )
 
         ToggleRow(
-            label = "Accessible typography (Atkinson Hyperlegible)",
+            label = s.settings_accessible_typography_label,
             checked = state.useAccessibleTypography,
             onCheckedChange = viewModel::setUseAccessibleTypography,
             testTagName = "settings-accessible-typography",
         )
 
         ToggleRow(
-            label = "Disable AI coach features",
+            label = s.settings_coach_disabled_label,
             checked = state.coachDisabled,
             onCheckedChange = viewModel::setCoachDisabled,
             testTagName = "settings-coach-disabled",
@@ -106,6 +109,9 @@ fun SettingsScreen(
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
         AboutCard(
+            aboutTitle = s.settings_about_title,
+            versionPrefix = s.settings_about_version_prefix,
+            specPrefix = s.settings_about_spec_prefix,
             version = viewModel.versionLabel,
             specDate = viewModel.specDateLabel,
         )
@@ -115,12 +121,15 @@ fun SettingsScreen(
 @Composable
 private fun LocaleSwitcherRow(
     current: AppLocale,
+    languageLabel: String,
+    enLabel: String,
+    roLabel: String,
     onSelect: (AppLocale) -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth().padding(8.dp).testTag("settings-locale-row")) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = "Language",
+                text = languageLabel,
                 style = MaterialTheme.typography.titleMedium,
             )
             Row(
@@ -132,14 +141,14 @@ private fun LocaleSwitcherRow(
                     enabled = current != AppLocale.EN,
                     modifier = Modifier.weight(1f).testTag("settings-locale-en"),
                 ) {
-                    Text("English")
+                    Text(enLabel)
                 }
                 Button(
                     onClick = { onSelect(AppLocale.RO) },
                     enabled = current != AppLocale.RO,
                     modifier = Modifier.weight(1f).testTag("settings-locale-ro"),
                 ) {
-                    Text("Română")
+                    Text(roLabel)
                 }
             }
         }
@@ -166,12 +175,18 @@ private fun ToggleRow(
 }
 
 @Composable
-private fun AboutCard(version: String, specDate: String) {
+private fun AboutCard(
+    aboutTitle: String,
+    versionPrefix: String,
+    specPrefix: String,
+    version: String,
+    specDate: String,
+) {
     Card(modifier = Modifier.fillMaxWidth().padding(8.dp).testTag("settings-about")) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(text = "About", style = MaterialTheme.typography.titleMedium)
-            Text(text = "Dietician $version", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Spec: $specDate", style = MaterialTheme.typography.bodySmall)
+            Text(text = aboutTitle, style = MaterialTheme.typography.titleMedium)
+            Text(text = "$versionPrefix $version", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "$specPrefix: $specDate", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

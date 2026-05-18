@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * RC1 (Council 1779120600) — voice-input button with toast fallback.
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun VoiceRecordButton(onTap: () -> Unit) {
+    val s = strings()
     Button(
         onClick = onTap,
         modifier = Modifier
@@ -43,7 +45,7 @@ fun VoiceRecordButton(onTap: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(imageVector = Icons.Filled.Phone, contentDescription = null)
-            Text(text = "Record voice")
+            Text(text = s.foodlog_voice_button)
         }
     }
 }

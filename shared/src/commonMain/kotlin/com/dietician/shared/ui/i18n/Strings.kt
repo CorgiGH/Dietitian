@@ -90,6 +90,26 @@ interface Strings {
     val expenditure_preview_empty_title: String
     val expenditure_preview_empty_body: String
 
+    // --- Home + FoodLog buttons + cards (nav-mount-iter-3 i18n batch) ---
+    val home_log_meal_cta: String
+    val today_nutrients_title: String
+    val foodlog_manual_field_label: String
+    val foodlog_voice_button: String
+    val foodlog_barcode_button: String
+    val foodlog_photo_button: String
+    val foodlog_same_as_recent_button: String
+
+    // --- Settings screen (nav-mount-iter-3) ---
+    val settings_language_label: String
+    val settings_locale_en_label: String
+    val settings_locale_ro_label: String
+    val settings_dark_theme_label: String
+    val settings_accessible_typography_label: String
+    val settings_coach_disabled_label: String
+    val settings_about_title: String
+    val settings_about_version_prefix: String
+    val settings_about_spec_prefix: String
+
     // --- Photo suggestion (Task 20 RC11 already in base, extend) ---
     val photo_suggestion_confirm: String
     val photo_suggestion_edit: String
@@ -187,6 +207,25 @@ object Strings_en : Strings {
     override val expenditure_preview_empty_body: String =
         "Log meals and weigh-ins for 7 days — your adaptive TDEE appears here."
 
+    override val home_log_meal_cta: String = "Log a meal"
+    override val today_nutrients_title: String = "Today's nutrients"
+    override val foodlog_manual_field_label: String = "Type a food or meal"
+    override val foodlog_voice_button: String = "Record voice"
+    override val foodlog_barcode_button: String = "Scan barcode"
+    override val foodlog_photo_button: String = "Photo of meal"
+    override val foodlog_same_as_recent_button: String = "Same as recent"
+
+    override val settings_language_label: String = "Language"
+    override val settings_locale_en_label: String = "English"
+    override val settings_locale_ro_label: String = "Română"
+    override val settings_dark_theme_label: String = "Dark theme"
+    override val settings_accessible_typography_label: String =
+        "Accessible typography (Atkinson Hyperlegible)"
+    override val settings_coach_disabled_label: String = "Disable AI coach features"
+    override val settings_about_title: String = "About"
+    override val settings_about_version_prefix: String = "Dietician"
+    override val settings_about_spec_prefix: String = "Spec"
+
     override val photo_suggestion_confirm: String = "Confirm"
     override val photo_suggestion_edit: String = "Edit"
     override val photo_suggestion_wrong: String = "Wrong"
@@ -280,6 +319,25 @@ object Strings_ro : Strings {
     override val expenditure_preview_empty_title: String = "Estimarea ta se formează"
     override val expenditure_preview_empty_body: String =
         "Înregistrează mese și cântăriri timp de 7 zile — TDEE-ul tău adaptiv apare aici."
+
+    override val home_log_meal_cta: String = "Înregistrează o masă"
+    override val today_nutrients_title: String = "Nutrienți de astăzi"
+    override val foodlog_manual_field_label: String = "Scrie o mâncare sau masă"
+    override val foodlog_voice_button: String = "Înregistrare vocală"
+    override val foodlog_barcode_button: String = "Scanează cod de bare"
+    override val foodlog_photo_button: String = "Fotografie masă"
+    override val foodlog_same_as_recent_button: String = "La fel ca recent"
+
+    override val settings_language_label: String = "Limbă"
+    override val settings_locale_en_label: String = "English"
+    override val settings_locale_ro_label: String = "Română"
+    override val settings_dark_theme_label: String = "Temă întunecată"
+    override val settings_accessible_typography_label: String =
+        "Tipografie accesibilă (Atkinson Hyperlegible)"
+    override val settings_coach_disabled_label: String = "Dezactivează funcțiile AI coach"
+    override val settings_about_title: String = "Despre"
+    override val settings_about_version_prefix: String = "Dietician"
+    override val settings_about_spec_prefix: String = "Spec"
 
     override val photo_suggestion_confirm: String = "Confirmă"
     override val photo_suggestion_edit: String = "Editează"

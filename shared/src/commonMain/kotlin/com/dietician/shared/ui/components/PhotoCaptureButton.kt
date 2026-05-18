@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Photo-of-meal capture button. CNN top-1 is only 72.92% on ISIA-Food-200 (R3 §1.13
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun PhotoCaptureButton(onTap: () -> Unit) {
+    val s = strings()
     Button(
         onClick = onTap,
         modifier = Modifier
@@ -42,7 +44,7 @@ fun PhotoCaptureButton(onTap: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(imageVector = Icons.Filled.Face, contentDescription = null)
-            Text(text = "Photo of meal")
+            Text(text = s.foodlog_photo_button)
         }
     }
 }
