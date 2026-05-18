@@ -6,6 +6,23 @@ on:
   pull_request:
     branches: ['**']
 
+# Plan-2 Batch E (Task 34): explicit env block applied to all steps.
+# Empty API keys trigger the llmAdaptersOnlyModule boot path (Plan-2 Batch D),
+# avoiding any live LLM network calls in CI. Tailscale + Victor UUID env
+# overrides are required for the test-only paths in TailnetDiscovery
+# (Plan-3 Task 9) and SubjectCredentialStore.
+env:
+  OPENROUTER_API_KEY: ""
+  GROQ_API_KEY: ""
+  ANTHROPIC_API_KEY: ""
+  GEMINI_API_KEY: ""
+  RESEND_API_KEY: ""
+  DIETICIAN_HOST_OVERRIDE: "127.0.0.1"
+  DIETICIAN_VICTOR_SUBJECT_ID: "00000000-0000-0000-0000-000000000001"
+  # GHA ubuntu-latest has ~7GB RAM. Mirror local Windows OOM-equivalent guard
+  # in gradle.properties (Xmx2g). max-workers=2 + no-daemon is set per-step.
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dfile.encoding=UTF-8"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,23 +35,39 @@ jobs:
       - name: Cache Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Lint
-        run: ./gradlew ktlintCheck detekt
-      - name: Shared KMP common test
-        run: ./gradlew :shared:desktopTest
-      - name: Android unit test
-        run: ./gradlew :shared:testDebugUnitTest
+        run: ./gradlew ktlintCheck detekt --no-daemon --max-workers=2
+      - name: Shared KMP desktop test (commonTest via desktopTest)
+        run: ./gradlew :shared:desktopTest --no-daemon --max-workers=2
+      - name: Shared Android compile (Plan-2 Batch E — verifies KMP androidMain compiles)
+        run: ./gradlew :shared:compileDebugKotlinAndroid --no-daemon --max-workers=2
+      - name: Shared Android unit test
+        run: ./gradlew :shared:testDebugUnitTest --no-daemon --max-workers=2
       - name: Server tests (Flyway + schema parity, Docker-backed)
-        run: ./gradlew :server:test
+        run: ./gradlew :server:test --no-daemon --max-workers=2
       # Plan-3 Task 41: explicit CI guards so a regression here fails fast in
       # its own job step (rather than buried in the giant :server:test log).
       # These are the BREAK-glass tests — every one of them encodes a
       # legal/council mandate.
       - name: Server CI guards (Plan-3 break-glass)
         run: |
-          ./gradlew :server:test \
+          ./gradlew :server:test --no-daemon --max-workers=2 \
             --tests "com.dietician.server.db.RlsBypassPreventionTest" \
             --tests "com.dietician.server.ci.EmotionInferencePreventionTest" \
             --tests "com.dietician.server.ci.PiiRedactionRequiredTest" \
             --tests "com.dietician.server.db.MigrationOrderingTest"
       - name: Assemble all
-        run: ./gradlew :server:assemble :desktopApp:assemble :androidApp:assembleDebug
+        run: ./gradlew :server:assemble :desktopApp:assemble :androidApp:assembleDebug --no-daemon --max-workers=2
+      # Plan-2 Batch E (Task 34): upload reports on failure so we can diagnose
+      # transient GHA-only issues without re-running locally.
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            shared/build/reports/tests/
+            shared/build/test-results/
+            server/build/reports/tests/
+            server/build/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
