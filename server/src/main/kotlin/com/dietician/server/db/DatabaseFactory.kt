@@ -1,5 +1,6 @@
 package com.dietician.server.db
 
+import com.dietician.server.observability.Counters
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
@@ -100,6 +101,7 @@ class DatabaseFactory(
                         st.execute("SELECT set_config('app.current_subject_id', '', true)")
                     }
                 }
+                Counters.rlsContextSetTotal.increment()
                 val result = block(conn)
                 conn.commit()
                 return result

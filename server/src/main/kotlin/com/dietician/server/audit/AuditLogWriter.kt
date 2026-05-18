@@ -1,6 +1,7 @@
 package com.dietician.server.audit
 
 import com.dietician.server.db.DatabaseFactory
+import com.dietician.server.observability.Counters
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import org.postgresql.util.PGobject
@@ -82,6 +83,10 @@ class AuditLogWriter(private val db: DatabaseFactory) {
         } else {
             db.withSystemContext(run)
         }
+        // Increment AFTER the write commits so a roll-back doesn't inflate
+        // the gauge. (Hikari throws on rollback failures so the increment
+        // line is skipped on the exception path.)
+        Counters.auditLogWritesTotal.increment()
     }
 
     private fun setNullableString(ps: java.sql.PreparedStatement, idx: Int, v: String?) {
