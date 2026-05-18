@@ -50,7 +50,6 @@ import com.dietician.shared.ui.i18n.strings
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onOpenAuditLog: () -> Unit = {},
-    onOpenCookbook: () -> Unit = {},
     onOpenPaperSearch: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
@@ -106,16 +105,6 @@ fun SettingsScreen(
                 .testTag("settings-view-audit-log"),
         ) {
             Text(s.audit_log_title)
-        }
-
-        Button(
-            onClick = onOpenCookbook,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .testTag("settings-view-cookbook"),
-        ) {
-            Text(s.settings_view_cookbook_button)
         }
 
         Button(

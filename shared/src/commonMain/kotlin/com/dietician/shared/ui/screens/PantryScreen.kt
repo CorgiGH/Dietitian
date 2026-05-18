@@ -3,6 +3,7 @@ package com.dietician.shared.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,12 +43,24 @@ import com.dietician.shared.ui.i18n.strings
 fun PantryScreen(
     viewModel: PantryViewModel,
     clockNowMs: () -> Long = { 0L },
+    onOpenCookbook: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
     val s = strings()
     LaunchedEffect(Unit) { viewModel.load() }
     Box(modifier = Modifier.fillMaxSize().testTag("pantry-screen")) {
         Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                OutlinedButton(
+                    onClick = onOpenCookbook,
+                    modifier = Modifier.testTag("pantry-open-cookbook"),
+                ) {
+                    Text(s.settings_view_cookbook_button)
+                }
+            }
             if (state.loaded && state.items.isEmpty()) {
                 Card(
                     modifier = Modifier

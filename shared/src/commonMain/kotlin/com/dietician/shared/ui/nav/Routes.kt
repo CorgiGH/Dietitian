@@ -87,7 +87,11 @@ sealed class DieticianScreen : Screen {
         @Composable
         override fun Content() {
             val viewModel = koinInject<PantryViewModel>()
-            PantryScreen(viewModel = viewModel)
+            val navigator = LocalNavigator.currentOrThrow
+            PantryScreen(
+                viewModel = viewModel,
+                onOpenCookbook = { navigator.push(Cookbook) },
+            )
         }
     }
 
@@ -136,7 +140,6 @@ sealed class DieticianScreen : Screen {
             SettingsScreen(
                 viewModel = viewModel,
                 onOpenAuditLog = { navigator.push(AuditLog) },
-                onOpenCookbook = { navigator.push(Cookbook) },
                 onOpenPaperSearch = { navigator.push(PaperSearch) },
             )
         }
