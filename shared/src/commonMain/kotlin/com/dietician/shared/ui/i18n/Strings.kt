@@ -104,6 +104,17 @@ interface Strings {
     val foodlog_same_as_recent_empty_title: String
     val foodlog_same_as_recent_empty_body: String
 
+    // --- ReceiptUpload screen (iter-4 i18n batch) ---
+    val receipt_take_photo_button: String
+    val receipt_uploading_label: String
+    val receipt_uploaded_title: String
+    val receipt_id_prefix: String
+    val receipt_view_in_pantry_button: String
+    val receipt_preview_byte_count_prefix: String
+    val receipt_retake_button: String
+    val receipt_upload_button: String
+    val receipt_upload_in_progress_button: String
+
     // --- Pantry + Coach + PlannedCut + AILiteracy (iter 3 follow-up batch 2) ---
     val pantry_empty_state: String
     val pantry_add_manually_fab: String
@@ -238,6 +249,16 @@ object Strings_en : Strings {
     override val foodlog_same_as_recent_empty_body: String =
         "Log a few meals first — they'll appear here for one-tap re-log."
 
+    override val receipt_take_photo_button: String = "Take photo / pick file"
+    override val receipt_uploading_label: String = "Uploading..."
+    override val receipt_uploaded_title: String = "Receipt uploaded"
+    override val receipt_id_prefix: String = "id"
+    override val receipt_view_in_pantry_button: String = "View in Pantry"
+    override val receipt_preview_byte_count_prefix: String = "Receipt preview"
+    override val receipt_retake_button: String = "Retake"
+    override val receipt_upload_button: String = "Upload"
+    override val receipt_upload_in_progress_button: String = "Uploading..."
+
     override val pantry_empty_state: String = "Pantry is empty — tap + to add an item"
     override val pantry_add_manually_fab: String = "+ Add manually"
     override val planned_cut_days_remaining_suffix: String = "days remaining"
@@ -367,6 +388,16 @@ object Strings_ro : Strings {
     override val foodlog_same_as_recent_empty_title: String = "Nicio masă recentă"
     override val foodlog_same_as_recent_empty_body: String =
         "Înregistrează câteva mese — vor apărea aici pentru re-logare rapidă."
+
+    override val receipt_take_photo_button: String = "Fă o poză / alege fișier"
+    override val receipt_uploading_label: String = "Se încarcă..."
+    override val receipt_uploaded_title: String = "Bon încărcat"
+    override val receipt_id_prefix: String = "id"
+    override val receipt_view_in_pantry_button: String = "Vezi în cămară"
+    override val receipt_preview_byte_count_prefix: String = "Previzualizare bon"
+    override val receipt_retake_button: String = "Refotografiază"
+    override val receipt_upload_button: String = "Încarcă"
+    override val receipt_upload_in_progress_button: String = "Se încarcă..."
 
     override val pantry_empty_state: String = "Cămara e goală — apasă + pentru a adăuga"
     override val pantry_add_manually_fab: String = "+ Adaugă manual"

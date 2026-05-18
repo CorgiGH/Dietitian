@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Receipt thumbnail preview + Upload / Retake buttons.
@@ -32,6 +33,7 @@ fun ReceiptPreviewCard(
     onUpload: () -> Unit,
     onRetake: () -> Unit,
 ) {
+    val s = strings()
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -40,7 +42,7 @@ fun ReceiptPreviewCard(
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = "Receipt preview: $byteCount bytes",
+                text = "${s.receipt_preview_byte_count_prefix}: $byteCount bytes",
                 style = MaterialTheme.typography.bodyMedium,
             )
             Row(
@@ -51,12 +53,12 @@ fun ReceiptPreviewCard(
                     onClick = onRetake,
                     enabled = !uploading,
                     modifier = Modifier.testTag("receipt-retake-button"),
-                ) { Text("Retake") }
+                ) { Text(s.receipt_retake_button) }
                 Button(
                     onClick = onUpload,
                     enabled = !uploading,
                     modifier = Modifier.testTag("receipt-upload-button"),
-                ) { Text(if (uploading) "Uploading..." else "Upload") }
+                ) { Text(if (uploading) s.receipt_upload_in_progress_button else s.receipt_upload_button) }
             }
         }
     }
