@@ -2,5 +2,22 @@
 # Plan-1 pre-commit hook — opportunistic local checks before push.
 # CI (.github/workflows/) is the ultimate gate. This is a courtesy fast-path
 # so obvious break-the-build commits don't reach origin.
+#
+# Plan-3 Task 41 + #52: early-bail when no Kotlin/Gradle files staged.
+# The full lint+test pass forks Gradle workers and can OOM a memory-tight box
+# on docs-only commits. The bail keeps the courtesy useful without ever
+# blocking a README typo.
 set -euo pipefail
-./gradlew --quiet ktlintFormat detekt :shared:desktopTest :server:test --tests "*SchemaParity*"
+
+# Stage list — limit to additions/modifications/copies, ignore deletions
+# (deleting a .kt file shouldn't trigger compile).
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if ! printf '%s\n' "$staged" | grep -qE '\.(kt|kts|sql)$'; then
+    echo "[pre-commit] No Kotlin/Gradle/SQL changes staged; skipping ktlint+detekt+tests."
+    exit 0
+fi
+
+# `--max-workers=1` lowers parallel Gradle worker count → reduces OOM risk on
+# the 6-7 GB heap budget the dev box has after Postgres + MC are running.
+./gradlew --quiet --max-workers=1 ktlintFormat detekt :shared:desktopTest :server:test --tests "*SchemaParity*"
