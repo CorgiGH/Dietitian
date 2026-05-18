@@ -13,12 +13,12 @@ import com.dietician.shared.ui.screens.AuditLogScreen
 import com.dietician.shared.ui.screens.AuditLogViewModel
 import com.dietician.shared.ui.screens.CoachChatScreen
 import com.dietician.shared.ui.screens.CoachChatViewModel
+import com.dietician.shared.ui.screens.CookbookScreen
+import com.dietician.shared.ui.screens.CookbookViewModel
 import com.dietician.shared.ui.screens.FoodLogScreen
 import com.dietician.shared.ui.screens.FoodLogViewModel
 import com.dietician.shared.ui.screens.HomeScreen
 import com.dietician.shared.ui.screens.HomeViewModel
-import com.dietician.shared.ui.screens.CookbookScreen
-import com.dietician.shared.ui.screens.CookbookViewModel
 import com.dietician.shared.ui.screens.PantryScreen
 import com.dietician.shared.ui.screens.PantryViewModel
 import com.dietician.shared.ui.screens.PaperSearchScreen
