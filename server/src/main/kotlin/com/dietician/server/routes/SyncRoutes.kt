@@ -4,15 +4,18 @@ import com.dietician.server.audit.AuditLogWriter
 import com.dietician.server.auth.AuthService
 import com.dietician.server.middleware.requireSubject
 import com.dietician.server.repo.EventRepository
+import com.dietician.server.sync.ServerPullResponse
 import com.dietician.server.sync.ServerPushAccepted
 import com.dietician.server.sync.ServerPushRejected
 import com.dietician.server.sync.ServerPushRequest
 import com.dietician.server.sync.ServerPushResponse
+import com.dietician.server.sync.toPulledRow
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -20,6 +23,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.koin.ktor.ext.inject
 import java.time.Instant
+import java.util.UUID
 
 /**
  * Plan-3 sync routes (Council 1779120000 RC9 baseline).
@@ -92,6 +96,58 @@ fun Application.installSyncRoutes() {
                 )
                 call.respond(HttpStatusCode.OK, ServerPushResponse(accepted = accepted, rejected = rejected))
             }
+
+            get("/pull") {
+                val subjectId = call.requireSubject(authService) ?: return@get
+                val table = call.parameters["table"] ?: return@get call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("error" to "missing_table_param"),
+                )
+                if (table !in EventRepository.TABLES) {
+                    return@get call.respond(
+                        HttpStatusCode.BadRequest,
+                        mapOf("error" to "unknown_table", "table" to table),
+                    )
+                }
+                val cursorParam = call.parameters["cursor"]?.takeIf { it.isNotBlank() }
+                val (cursorMs, cursorUuid) = decodeCursor(cursorParam)
+                val limit = call.parameters["limit"]?.toIntOrNull()?.coerceIn(1, 500) ?: 500
+                val rows = eventRepo.listSince(subjectId, table, cursorMs, cursorUuid, limit)
+                val pulled = rows.map { it.toPulledRow() }
+                auditLog.write(
+                    subjectId = subjectId,
+                    kind = "sync_pull",
+                    extra = JsonObject(
+                        mapOf(
+                            "table" to JsonPrimitive(table),
+                            "count" to JsonPrimitive(rows.size),
+                        ),
+                    ),
+                )
+                call.respond(
+                    HttpStatusCode.OK,
+                    ServerPullResponse(
+                        rows = pulled,
+                        serverTimeMs = Instant.now().toEpochMilli(),
+                    ),
+                )
+            }
         }
     }
+}
+
+/**
+ * Decode the opaque cursor string `"<ms>:<event_uuid>"` produced by the
+ * client after a prior `/sync/pull`. Empty cursor → (0, null) — "from the
+ * beginning". EventRepository.listSince takes (ms, uuid?) directly so we
+ * don't construct the typed [com.dietician.shared.data.api.Cursor] wrapper
+ * server-side; the client owns serialization.
+ */
+private fun decodeCursor(raw: String?): Pair<Long, UUID?> {
+    if (raw.isNullOrBlank()) return 0L to null
+    val parts = raw.split(":", limit = 2)
+    require(parts.size == 2) { "cursor must be 'ms:uuid'" }
+    val ms = parts[0].toLong()
+    val uuid = if (parts[1].isBlank()) null else UUID.fromString(parts[1])
+    return ms to uuid
 }

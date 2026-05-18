@@ -3,6 +3,7 @@ package com.dietician.server
 import com.dietician.server.di.dieticianModule
 import com.dietician.server.observability.installObservability
 import com.dietician.server.routes.installAuthRoutes
+import com.dietician.server.routes.installReceiptsRoutes
 import com.dietician.server.routes.installSyncRoutes
 import com.dietician.shared.Dietician
 import io.ktor.http.HttpStatusCode
@@ -100,4 +101,5 @@ fun Application.module() {
 
     installAuthRoutes()
     installSyncRoutes()
+    installReceiptsRoutes()
 }

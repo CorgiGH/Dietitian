@@ -12,6 +12,7 @@ import com.dietician.server.middleware.SESSION_COOKIE
 import com.dietician.server.repo.EventRepository
 import com.dietician.server.repo.SubjectRepository
 import io.ktor.client.request.cookie
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -25,6 +26,7 @@ import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
@@ -36,6 +38,8 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import java.sql.DriverManager
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @Testcontainers
 class SyncRoutesTest {
@@ -234,4 +238,89 @@ class SyncRoutesTest {
         stopKoinIfRunning()
     }
 
+    @Test
+    fun `pull returns rows pushed by this subject`() = testApplication {
+        stopKoinIfRunning()
+        val db = freshDb()
+        val sessions = SessionStore()
+        val mod = module {
+            single { db }
+            single { sessions }
+            single { SubjectRepository(get<DatabaseFactory>()) }
+            single { EventRepository(get<DatabaseFactory>()) }
+            single { AuditLogWriter(get<DatabaseFactory>()) }
+            single { MagicLinkService() }
+            single { RateLimiter() }
+            single { NoopEmailSender() }
+            single {
+                AuthService(
+                    subjects = get(),
+                    magicLinks = get(),
+                    sessions = get(),
+                    email = get<NoopEmailSender>(),
+                    audit = get(),
+                )
+            }
+        }
+        application {
+            install(Koin) { modules(mod) }
+            install(ContentNegotiation) { json() }
+            installSyncRoutes()
+        }
+        val (subjectId, sessionId) = createSubjectAndCookie(db, sessions)
+        val evt = UUID.randomUUID()
+        val sku = UUID.randomUUID()
+        val payload = """{"event_uuid":"$evt","device_id":"dev-x","originated_at":"2026-05-18T10:00:00Z","synced_at":"2026-05-18T10:00:01Z","sku_uuid":"$sku","delta_qty":1.0,"unit":"g","subject_id":"$subjectId"}"""
+        EventRepository(db).upsert(subjectId, "pantry_events", payload)
+
+        val resp = client.get("/sync/pull?table=pantry_events") {
+            cookie(SESSION_COOKIE, sessionId)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+        val json = Json.parseToJsonElement(resp.bodyAsText()).jsonObject
+        val rows = json["rows"]!!.jsonArray
+        assertTrue(rows.size >= 1)
+        val first = rows.first().jsonObject
+        assertEquals("pantry_events", first["tableName"]!!.jsonPrimitive.content)
+        assertEquals(evt.toString(), first["eventUuid"]!!.jsonPrimitive.content)
+        assertNotNull(json["serverTimeMs"])
+        stopKoinIfRunning()
+    }
+
+    @Test
+    fun `pull with unknown table returns 400`() = testApplication {
+        stopKoinIfRunning()
+        val db = freshDb()
+        val sessions = SessionStore()
+        val mod = module {
+            single { db }
+            single { sessions }
+            single { SubjectRepository(get<DatabaseFactory>()) }
+            single { EventRepository(get<DatabaseFactory>()) }
+            single { AuditLogWriter(get<DatabaseFactory>()) }
+            single { MagicLinkService() }
+            single { RateLimiter() }
+            single { NoopEmailSender() }
+            single {
+                AuthService(
+                    subjects = get(),
+                    magicLinks = get(),
+                    sessions = get(),
+                    email = get<NoopEmailSender>(),
+                    audit = get(),
+                )
+            }
+        }
+        application {
+            install(Koin) { modules(mod) }
+            install(ContentNegotiation) { json() }
+            installSyncRoutes()
+        }
+        val (_, sessionId) = createSubjectAndCookie(db, sessions)
+        val resp = client.get("/sync/pull?table=bogus_events") {
+            cookie(SESSION_COOKIE, sessionId)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+        stopKoinIfRunning()
+    }
 }
