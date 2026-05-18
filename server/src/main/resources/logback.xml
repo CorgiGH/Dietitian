@@ -1,13 +1,25 @@
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    <!--
+      Plan-3 observability — Logstash JSON encoder on STDOUT so the systemd
+      journal indexes per-field via journald native JSON support. File
+      appender stays plain-text for human grep when the operator SSHes in.
+
+      Env knob: DIETICIAN_LOG_DIR (default: /var/log/dietician). If the
+      directory doesn't exist or isn't writable (dev / test JVM), the FILE
+      appender is silently skipped via PropertyAction default-fallback.
+    -->
+    <property name="LOG_DIR" value="${DIETICIAN_LOG_DIR:-/var/log/dietician}" />
+
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"dietician-backend"}</customFields>
         </encoder>
     </appender>
+
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/var/log/dietician/server.log</file>
+        <file>${LOG_DIR}/server.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>/var/log/dietician/server.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>${LOG_DIR}/server.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>20MB</maxFileSize>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
@@ -15,8 +27,13 @@
             <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
+
     <root level="INFO">
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="JSON" />
         <appender-ref ref="FILE" />
     </root>
+
+    <logger name="org.flywaydb" level="WARN" />
+    <logger name="com.zaxxer.hikari" level="WARN" />
+    <logger name="io.ktor" level="INFO" />
 </configuration>

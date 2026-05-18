@@ -63,6 +63,16 @@ dependencies {
     // File watcher
     implementation(libs.directory.watcher)
 
+    // DI (Koin) — server-side Ktor wiring
+    implementation(libs.koin.core)
+    implementation(libs.koin.ktor)
+    implementation(libs.koin.logger.slf4j)
+
+    // Observability (Micrometer Prometheus on :9091, structured JSON logs)
+    implementation(libs.ktor.server.metrics.micrometer)
+    implementation(libs.micrometer.prometheus)
+    implementation(libs.logstash.logback.encoder)
+
     // Logging
     implementation(libs.slf4j.api)
     implementation(libs.logback.classic)
@@ -70,6 +80,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(libs.junit.jupiter)
+    testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.kotlinx.serialization.json)
