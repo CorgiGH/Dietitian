@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.components.ReceiptPreviewCard
 import com.dietician.shared.ui.data.captureImage
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Receipt upload surface.
@@ -46,6 +47,7 @@ fun ReceiptUploadScreen(
     captureProvider: () -> ByteArray? = ::captureImage,
 ) {
     val state by viewModel.state.collectAsState()
+    val s = strings()
     val snackbarHost = remember { SnackbarHostState() }
     LaunchedEffect(state.errorToast) {
         state.errorToast?.let {
@@ -72,15 +74,15 @@ fun ReceiptUploadScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Receipt uploaded",
+                            text = s.receipt_uploaded_title,
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
-                            text = "id: $rid",
+                            text = "${s.receipt_id_prefix}: $rid",
                             style = MaterialTheme.typography.bodySmall,
                         )
                         TextButton(onClick = { onViewInPantry(rid) }) {
-                            Text("View in Pantry")
+                            Text(s.receipt_view_in_pantry_button)
                         }
                     }
                 }
@@ -89,7 +91,7 @@ fun ReceiptUploadScreen(
                 CircularProgressIndicator(
                     modifier = Modifier.testTag("receipt-upload-progress"),
                 )
-                Text("Uploading...")
+                Text(s.receipt_uploading_label)
             }
             state.previewBytes != null -> {
                 ReceiptPreviewCard(
@@ -106,7 +108,7 @@ fun ReceiptUploadScreen(
                     },
                     modifier = Modifier.testTag("receipt-camera-button"),
                 ) {
-                    Text("Take photo / pick file")
+                    Text(s.receipt_take_photo_button)
                 }
             }
         }

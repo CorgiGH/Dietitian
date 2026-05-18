@@ -19,6 +19,8 @@ import com.dietician.shared.ui.screens.HomeScreen
 import com.dietician.shared.ui.screens.HomeViewModel
 import com.dietician.shared.ui.screens.PantryScreen
 import com.dietician.shared.ui.screens.PantryViewModel
+import com.dietician.shared.ui.screens.ReceiptUploadScreen
+import com.dietician.shared.ui.screens.ReceiptUploadViewModel
 import com.dietician.shared.ui.screens.SettingsScreen
 import com.dietician.shared.ui.screens.SettingsViewModel
 import org.koin.compose.koinInject
@@ -64,8 +66,14 @@ sealed class DieticianScreen : Screen {
         @Composable
         override fun Content() {
             val viewModel = koinInject<FoodLogViewModel>()
+            val navigator = LocalNavigator.currentOrThrow
             LaunchedEffect(viewModel) { viewModel.load() }
-            FoodLogScreen(viewModel = viewModel)
+            FoodLogScreen(
+                viewModel = viewModel,
+                onBarcodeScan = viewModel::onBarcodeTap,
+                onPhotoCapture = { navigator.push(ReceiptUpload) },
+                onSameAsRecent = { viewModel.showSameAsSheet() },
+            )
         }
     }
 
@@ -124,6 +132,20 @@ sealed class DieticianScreen : Screen {
         override fun Content() {
             val viewModel = koinInject<AuditLogViewModel>()
             AuditLogScreen(viewModel = viewModel)
+        }
+    }
+
+    data object ReceiptUpload : DieticianScreen() {
+        override val key: ScreenKey = "receipt-upload"
+
+        @Composable
+        override fun Content() {
+            val viewModel = koinInject<ReceiptUploadViewModel>()
+            val navigator = LocalNavigator.currentOrThrow
+            ReceiptUploadScreen(
+                viewModel = viewModel,
+                onViewInPantry = { navigator.replaceAll(Pantry) },
+            )
         }
     }
 
