@@ -7,7 +7,13 @@
  *
  * Locked copy assertions (RC5 BigorexiaCopyTest) — DO NOT edit the bigorexia_*
  * phrases without updating the test.
+ *
+ * Snake_case property names mirror Android `strings.xml` keys so identifiers
+ * roundtrip into moko-resources / XML without renaming. ktlint's
+ * `property-naming` rule wants camelCase — suppress at file level.
  */
+
+@file:Suppress("ktlint:standard:property-naming", "ktlint:standard:class-naming", "ClassName")
 
 package com.dietician.shared.ui.i18n
 

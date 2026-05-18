@@ -64,12 +64,14 @@ class PantryRepository(
     override fun flowSnapshot(): Flow<List<PantryItem>> =
         snapshots.currentAll().map { rows ->
             rows.map { row ->
+                // Plan-3 metadata wiring lands Batch E: displayName + expiresAtMs
+                // hydrate from pantry_metadata table after receipts/upload OCR.
                 PantryItem(
                     skuUuid = row.skuUuid,
-                    displayName = row.skuUuid, // Plan-3 metadata wiring TODO Batch E.
+                    displayName = row.skuUuid,
                     qty = row.qty,
                     unit = row.unit,
-                    expiresAtMs = null, // Plan-3 metadata wiring TODO Batch E.
+                    expiresAtMs = null,
                     open = false,
                 )
             }
@@ -96,7 +98,8 @@ class PantryRepository(
                 deviceId = deviceIdProvider(),
                 originatedAtMs = clockNowMs(),
                 skuUuid = sku,
-                deltaQty = -qty, // consume = negative delta
+                // consume = negative delta
+                deltaQty = -qty,
                 unit = unit,
                 reason = "consume",
             ),

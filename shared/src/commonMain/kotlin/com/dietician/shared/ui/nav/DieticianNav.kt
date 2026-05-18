@@ -83,9 +83,10 @@ fun DieticianBottomNav() {
     NavigationBar(modifier = Modifier.testTag("dietician-bottom-nav")) {
         BottomNavScreens.forEach { screen ->
             val meta = bottomNavMeta(screen, s)
+            // selected + onClick wired to active route in Task 27/28 mount-site.
             NavigationBarItem(
-                selected = false, // wired to active route in later mount task
-                onClick = { /* wired in Task 27/28 (mount-site) */ },
+                selected = false,
+                onClick = { },
                 icon = { Icon(imageVector = meta.icon, contentDescription = meta.label) },
                 label = { Text(meta.label) },
                 modifier = Modifier.testTag("nav-${screen.key}"),
