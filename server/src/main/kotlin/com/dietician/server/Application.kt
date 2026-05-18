@@ -6,6 +6,7 @@ import com.dietician.server.routes.installAuthRoutes
 import com.dietician.server.routes.installEmbedRoutes
 import com.dietician.server.routes.installMeRoutes
 import com.dietician.server.routes.installReceiptsRoutes
+import com.dietician.server.routes.installRedactRoutes
 import com.dietician.server.routes.installSyncRoutes
 import com.dietician.shared.Dietician
 import io.ktor.http.HttpStatusCode
@@ -106,4 +107,5 @@ fun Application.module() {
     installReceiptsRoutes()
     installEmbedRoutes()
     installMeRoutes()
+    installRedactRoutes()
 }
