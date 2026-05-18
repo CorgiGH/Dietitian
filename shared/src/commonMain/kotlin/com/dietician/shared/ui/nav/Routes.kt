@@ -9,8 +9,16 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.dietician.shared.ui.screens.AuditLogScreen
+import com.dietician.shared.ui.screens.AuditLogViewModel
+import com.dietician.shared.ui.screens.CoachChatScreen
+import com.dietician.shared.ui.screens.CoachChatViewModel
+import com.dietician.shared.ui.screens.FoodLogScreen
+import com.dietician.shared.ui.screens.FoodLogViewModel
 import com.dietician.shared.ui.screens.HomeScreen
 import com.dietician.shared.ui.screens.HomeViewModel
+import com.dietician.shared.ui.screens.PantryScreen
+import com.dietician.shared.ui.screens.PantryViewModel
 import org.koin.compose.koinInject
 
 /**
@@ -20,12 +28,13 @@ import org.koin.compose.koinInject
  * DieticianBottomNav). Detail screens (MealDetail) embed their id into the
  * key so back-stack restoration round-trips correctly.
  *
- * **Mount state (nav-mount-fix iteration 1):**
- *   - [Home] mounts the real [HomeScreen] via Koin-resolved [HomeViewModel].
- *   - All other tabs still render [PlaceholderScreen] until their own mount
- *     iteration ships. PlaceholderScreen carries a `placeholder-{key}` testTag
- *     so smoke walks can distinguish "tab not yet mounted" from "tab mounted
- *     and broken".
+ * **Mount state (nav-mount iteration 2):**
+ *   - [Home] / [FoodLog] / [Pantry] / [CoachChat] / [AuditLog] mount their real
+ *     screen composables via Koin-resolved ViewModels.
+ *   - [Cookbook] + [Settings] still render [PlaceholderScreen]. Cookbook isn't a
+ *     bottom-nav tab in spec; Settings has no `SettingsScreen.kt` yet.
+ *     PlaceholderScreen carries a `placeholder-{key}` testTag so smoke walks
+ *     distinguish "not yet mounted" from "mounted and broken".
  */
 sealed class DieticianScreen : Screen {
 
@@ -52,7 +61,9 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Food log", key)
+            val viewModel = koinInject<FoodLogViewModel>()
+            LaunchedEffect(viewModel) { viewModel.load() }
+            FoodLogScreen(viewModel = viewModel)
         }
     }
 
@@ -61,7 +72,8 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Pantry", key)
+            val viewModel = koinInject<PantryViewModel>()
+            PantryScreen(viewModel = viewModel)
         }
     }
 
@@ -79,7 +91,13 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Coach", key)
+            val viewModel = koinInject<CoachChatViewModel>()
+            val navigator = LocalNavigator.currentOrThrow
+            CoachChatScreen(
+                viewModel = viewModel,
+                onOpenAuditRow = { navigator.push(AuditLog) },
+                onOpenSettings = { navigator.push(Settings) },
+            )
         }
     }
 
@@ -97,7 +115,8 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Audit log", key)
+            val viewModel = koinInject<AuditLogViewModel>()
+            AuditLogScreen(viewModel = viewModel)
         }
     }
 
