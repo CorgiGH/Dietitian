@@ -75,4 +75,7 @@ dependencies {
     // ntfy client (HTTP-only; phone app subscribes via Android ntfy app, daemon publishes via HTTP)
 
     implementation(libs.ktor.client.okhttp)
+
+    // Koin DI (matches shared module's koin-core dep).
+    implementation(libs.koin.core)
 }

@@ -75,6 +75,9 @@ kotlin {
                 implementation(libs.kotest.assertions.core)
                 implementation(libs.kotest.property)
                 implementation(libs.ktor.client.mock)
+                // Compose MP UI testing (RC2 — Roborazzi dropped, use CMP-native UI test).
+                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+                implementation(compose.uiTest)
             }
         }
 
@@ -112,6 +115,9 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.kotest.assertions.core)
                 implementation(libs.sqldelight.driver.sqlite)
+                // Compose Desktop UI test runner (JUnit4-based; runs in desktopTest JVM).
+                implementation(compose.desktop.uiTestJUnit4)
+                implementation(compose.desktop.currentOs)
             }
         }
     }
