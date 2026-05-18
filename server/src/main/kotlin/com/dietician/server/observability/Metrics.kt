@@ -34,6 +34,17 @@ object Counters {
     val authSignOutTotal = Metrics.registry.counter("dietician.auth.signout.total")
     val authSignOutAllTotal = Metrics.registry.counter("dietician.auth.signout_all.total")
     val rlsContextSetTotal = Metrics.registry.counter("dietician.rls_context.set.total")
+
+    /**
+     * Per-cron-job success counter. Tagged by `job` so a single Prometheus
+     * counter family covers audit-prune + backup + future jobs.
+     */
+    fun cronCompletedTotal(job: String) =
+        Metrics.registry.counter("dietician.cron.completed.total", "job", job)
+
+    /** Per-cron-job failure counter (paired with [cronCompletedTotal]). */
+    fun cronFailedTotal(job: String) =
+        Metrics.registry.counter("dietician.cron.failed.total", "job", job)
 }
 
 /**
