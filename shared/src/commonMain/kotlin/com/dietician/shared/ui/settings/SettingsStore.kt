@@ -23,6 +23,8 @@ data class SettingsState(
     val darkTheme: Boolean = false,
     val useAccessibleTypography: Boolean = false,
     val coachDisabled: Boolean = false,
+    val onboarded: Boolean = false,
+    val aiLiteracyAckedVersion: String? = null,
 )
 
 /**
@@ -38,6 +40,8 @@ interface SettingsStore {
     fun setDarkTheme(enabled: Boolean)
     fun setUseAccessibleTypography(enabled: Boolean)
     fun setCoachDisabled(disabled: Boolean)
+    fun markOnboarded()
+    fun setAiLiteracyAckedVersion(version: String?)
 }
 
 class InMemorySettingsStore(initial: SettingsState = SettingsState()) : SettingsStore {
@@ -58,5 +62,13 @@ class InMemorySettingsStore(initial: SettingsState = SettingsState()) : Settings
 
     override fun setCoachDisabled(disabled: Boolean) {
         _state.value = _state.value.copy(coachDisabled = disabled)
+    }
+
+    override fun markOnboarded() {
+        _state.value = _state.value.copy(onboarded = true)
+    }
+
+    override fun setAiLiteracyAckedVersion(version: String?) {
+        _state.value = _state.value.copy(aiLiteracyAckedVersion = version)
     }
 }

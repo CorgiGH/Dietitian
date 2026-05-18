@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cookbook + PaperSearch placement — 4 options</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #181b22;
+    --card: #1f232c;
+    --card-2: #262b36;
+    --text: #e8eaee;
+    --muted: #8b93a1;
+    --accent: #7ab97f;
+    --accent-2: #4a86c6;
+    --border: #2a2f3a;
+    --danger: #c76b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  h1 { margin: 0 0 8px; font-weight: 600; font-size: 22px; }
+  .lead { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    max-width: 1600px;
+  }
+  .option { display: flex; flex-direction: column; gap: 12px; }
+  .option-head { display: flex; gap: 8px; align-items: baseline; }
+  .option-num {
+    background: var(--accent-2);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .option-title { font-size: 15px; font-weight: 600; }
+  .option-desc { color: var(--muted); font-size: 13px; line-height: 1.45; }
+
+  /* Phone shell */
+  .phone {
+    width: 320px;
+    height: 640px;
+    background: var(--panel);
+    border-radius: 28px;
+    border: 6px solid #2a2f3a;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0,0,0,.45);
+  }
+  .status-bar {
+    height: 28px;
+    background: #0a0c10;
+    color: var(--muted);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+  }
+  .screen {
+    flex: 1;
+    padding: 12px 14px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-title { font-weight: 600; font-size: 18px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .card-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .card-body { color: var(--muted); font-size: 12px; line-height: 1.35; }
+  .row { display: flex; gap: 8px; }
+  .btn {
+    flex: 1;
+    background: var(--accent-2);
+    color: white;
+    border: 0;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .btn-secondary { background: var(--card-2); color: var(--text); }
+  .btn-ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .pill {
+    background: var(--card-2);
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .item:last-child { border-bottom: 0; }
+  .item-meta { color: var(--muted); font-size: 11px; }
+
+  /* Bottom nav */
+  .bottomnav {
+    display: flex;
+    background: #0a0c10;
+    border-top: 1px solid var(--border);
+    padding: 6px 0 10px;
+  }
+  .navitem {
+    flex: 1;
+    text-align: center;
+    color: var(--muted);
+    font-size: 10px;
+    padding: 4px 0;
+  }
+  .navitem .icon {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 2px;
+  }
+  .navitem.active { color: var(--accent); }
+
+  /* Highlights */
+  .new {
+    box-shadow: 0 0 0 2px var(--accent);
+    position: relative;
+  }
+  .new::before {
+    content: "NEW";
+    position: absolute;
+    top: -8px;
+    right: 8px;
+    background: var(--accent);
+    color: #0a0c10;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+  <h1>Cookbook + PaperSearch placement — 4 mockups</h1>
+  <p class="lead">Pick which option you want; I implement that one. Green outline + "NEW" label highlights where the new entries land.</p>
+
+  <div class="grid">
+
+    <!-- Option 1 -->
+    <div class="option">
+      <div class="option-head">
+        <span class="option-num">1</span>
+        <span class="option-title">Cookbook on Pantry top bar</span>
+      </div>
+      <div class="option-desc">Pantry shows what you HAVE; Cookbook shows what you can MAKE. Thematic link. PaperSearch stays in Settings (rarely used).</div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>📶 100%</span></div>
+        <div class="screen">
+          <div class="topbar">
+            <span class="topbar-title">Pantry</span>
+            <button class="btn btn-ghost new" style="flex: 0 0 auto; padding: 6px 12px;">📖 Cookbook</button>
+          </div>
+          <div class="item">
+            <span>Chicken breast</span>
+            <span class="item-meta">200g · 3d left</span>
+          </div>
+          <div class="item">
+            <span>Rice (Mega CONNECT)</span>
+            <span class="item-meta">1kg</span>
+          </div>
+          <div class="item">
+            <span>Broccoli</span>
+            <span class="item-meta">200g · 1d ⚠</span>
+          </div>
+          <div class="item">
+            <span>Olive oil</span>
+            <span class="item-meta">500ml</span>
+          </div>
+          <div style="margin-top: auto; align-self: flex-end;">
+            <button class="btn" style="padding: 12px 16px;">+ Add manually</button>
+          </div>
+        </div>
+        <div class="bottomnav">
+          <div class="navitem"><span class="icon">🏠</span>Home</div>
+          <div class="navitem"><span class="icon">📋</span>Log</div>
+          <div class="navitem active"><span class="icon">🛒</span>Pantry</div>
+          <div class="navitem"><span class="icon">💬</span>Coach</div>
+          <div class="navitem"><span class="icon">⚙️</span>Settings</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option 2 -->
+    <div class="option">
+      <div class="option-head">
+        <span class="option-num">2</span>
+        <span class="option-title">Cookbook + PaperSearch on Home cards</span>
+      </div>
+      <div class="option-desc">Discoverable from Home. New cards under Today's Nutrients. User sees them every launch.</div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>📶 100%</span></div>
+        <div class="screen">
+          <div class="card">
+            <div class="card-title">Victor</div>
+            <div class="card-body">stub-subject-0000 · <a style="color: var(--accent-2);">Settings</a></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Building your estimate</div>
+            <div class="card-body">Log meals and weigh-ins for 7 days — your adaptive TDEE appears here.</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Today's nutrients</div>
+            <div class="chips" style="margin-top: 6px;">
+              <span class="pill">kcal 0/2750</span>
+              <span class="pill">protein 0g/137</span>
+              <span class="pill">carbs 0g</span>
+              <span class="pill">fat 0g</span>
+            </div>
+          </div>
+          <div class="row new">
+            <button class="btn btn-secondary">📖 Cookbook</button>
+            <button class="btn btn-secondary">📚 Search papers</button>
+          </div>
+          <button class="btn" style="margin-top: 4px;">📋 Log a meal</button>
+        </div>
+        <div class="bottomnav">
+          <div class="navitem active"><span class="icon">🏠</span>Home</div>
+          <div class="navitem"><span class="icon">📋</span>Log</div>
+          <div class="navitem"><span class="icon">🛒</span>Pantry</div>
+          <div class="navitem"><span class="icon">💬</span>Coach</div>
+          <div class="navitem"><span class="icon">⚙️</span>Settings</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option 3 -->
+    <div class="option">
+      <div class="option-head">
+        <span class="option-num">3</span>
+        <span class="option-title">Replace Settings with "More" tab</span>
+      </div>
+      <div class="option-desc">Bottom nav: Home/Log/Pantry/Coach/More. More tab is a list: Cookbook / Search papers / Settings / Audit log / Sign out. Most flexible long-term.</div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>📶 100%</span></div>
+        <div class="screen">
+          <div class="topbar"><span class="topbar-title">More</span></div>
+          <div class="item new">
+            <span>📖 Cookbook</span>
+            <span class="item-meta">›</span>
+          </div>
+          <div class="item new">
+            <span>📚 Search papers</span>
+            <span class="item-meta">›</span>
+          </div>
+          <div class="item">
+            <span>🧾 Audit log</span>
+            <span class="item-meta">›</span>
+          </div>
+          <div class="item">
+            <span>⚙️ Settings</span>
+            <span class="item-meta">›</span>
+          </div>
+          <div class="item">
+            <span>🚪 Sign out</span>
+            <span class="item-meta">›</span>
+          </div>
+        </div>
+        <div class="bottomnav">
+          <div class="navitem"><span class="icon">🏠</span>Home</div>
+          <div class="navitem"><span class="icon">📋</span>Log</div>
+          <div class="navitem"><span class="icon">🛒</span>Pantry</div>
+          <div class="navitem"><span class="icon">💬</span>Coach</div>
+          <div class="navitem active new" style="padding-top: 8px;"><span class="icon">⋯</span>More</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option 4 -->
+    <div class="option">
+      <div class="option-head">
+        <span class="option-num">4</span>
+        <span class="option-title">Keep in Settings (current)</span>
+      </div>
+      <div class="option-desc">Accept current dumping-ground state. Revisit when more dest screens land. Zero change cost.</div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>📶 100%</span></div>
+        <div class="screen">
+          <div class="topbar"><span class="topbar-title">Settings</span></div>
+          <div class="card">
+            <div class="card-title">Language</div>
+            <div class="row" style="margin-top: 6px;">
+              <button class="btn btn-secondary">English</button>
+              <button class="btn btn-secondary">Română</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Dark theme</div>
+            <div class="card-body">Toggle ON</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Accessible typography</div>
+            <div class="card-body">Toggle OFF</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Disable AI coach</div>
+            <div class="card-body">Toggle OFF</div>
+          </div>
+          <button class="btn">🧾 Audit log</button>
+          <button class="btn new">📖 Cookbook</button>
+          <button class="btn new">📚 Search papers</button>
+        </div>
+        <div class="bottomnav">
+          <div class="navitem"><span class="icon">🏠</span>Home</div>
+          <div class="navitem"><span class="icon">📋</span>Log</div>
+          <div class="navitem"><span class="icon">🛒</span>Pantry</div>
+          <div class="navitem"><span class="icon">💬</span>Coach</div>
+          <div class="navitem active"><span class="icon">⚙️</span>Settings</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -90,6 +90,16 @@ fun OnboardingScreen(actions: OnboardingActions) {
                 ) {
                     Text(s.onboarding_resend_link_button)
                 }
+                // Dev affordance — manually fire the verify signal that the real
+                // WebSocket listener fires when the magic link is opened. Drives
+                // smoke walks without a deployed backend. Hidden once the real
+                // verify path lands (Plan-3 deploy + cross-device WS wiring).
+                Button(
+                    onClick = actions::onVerified,
+                    modifier = Modifier.testTag("onboarding-simulate-verify"),
+                ) {
+                    Text(s.onboarding_simulate_verify_button)
+                }
                 if (success) {
                     Text(
                         text = s.onboarding_success_label,

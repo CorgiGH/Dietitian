@@ -5,9 +5,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import com.dietician.shared.ui.components.AILiteracyVersionGate
 import com.dietician.shared.ui.di.uiModule
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.network.networkModule
+import com.dietician.shared.ui.settings.SettingsStore
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -37,6 +39,11 @@ class DieticianNavMountTest {
         if (GlobalContext.getOrNull() == null) {
             startKoin { modules(networkModule, uiModule) }
         }
+        // Skip onboarding + AI literacy ack so tests land on DieticianApp routes.
+        // The dedicated OnboardingGateTest exercises the gating logic.
+        val store = GlobalContext.get().get<SettingsStore>()
+        store.markOnboarded()
+        store.setAiLiteracyAckedVersion(AILiteracyVersionGate.CURRENT_VERSION)
     }
 
     @AfterTest
