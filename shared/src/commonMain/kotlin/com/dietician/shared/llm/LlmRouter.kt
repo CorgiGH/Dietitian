@@ -50,12 +50,29 @@ class LlmRouter(
     private val cache: IdempotencyCache,
     private val budget: BudgetLedger,
     val auditLog: AuditLogSink,
+    private val antiRecommend: AntiRecommendExclusion = AntiRecommendExclusion(AntiRecommendExclusionConfig.EMPTY),
     @Suppress("unused") private val clock: Clock = Clock.System,
 ) {
     suspend fun route(request: LlmRequest): LlmResponse {
-        val chain = RoutingRules.selectChain(config, request)
-        require(chain.isNotEmpty()) {
+        val rawChain = RoutingRules.selectChain(config, request)
+        require(rawChain.isNotEmpty()) {
             "Empty chain for ${request.deviceClass}/${request.task}"
+        }
+        // Task 27 — strip excluded provider/model tuples for this subject (or global *).
+        val chain = antiRecommend.filter(rawChain, request.subjectId)
+        if (chain.isEmpty()) {
+            auditLog.write(
+                AuditEntry(
+                    subjectId = request.subjectId,
+                    kind = "llm_call_all_excluded",
+                    extra = mapOf(
+                        "device_class" to request.deviceClass.name,
+                        "task" to request.task.name,
+                        "raw_chain_size" to rawChain.size.toString(),
+                    ),
+                ),
+            )
+            throw LlmError.ProviderUnavailable(rawChain.first().id)
         }
 
         val firstProvider = chain.first()
