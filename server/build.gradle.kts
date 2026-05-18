@@ -78,6 +78,14 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // Cap test JVM heap; Windows commit-charge pressure (Docker vmmem + WSL + dev tools)
+    // crashes default-heap (~3.5G) test workers with G1 virtual-space mmap failures.
+    // 768m is enough for Testcontainers + Flyway + JDBC + JUnit + small SQLDelight schema.
+    maxHeapSize = "768m"
+    minHeapSize = "256m"
+    jvmArgs("-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200", "-XX:MaxMetaspaceSize=256m")
+    maxParallelForks = 1
+    forkEvery = 0
 }
 
 ktor {
