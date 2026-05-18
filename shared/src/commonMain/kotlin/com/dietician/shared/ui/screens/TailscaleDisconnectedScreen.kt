@@ -61,7 +61,7 @@ fun TailscaleDisconnectedScreen(
                 onClick = onRetry,
                 modifier = Modifier.testTag("tailscale-disconnected-retry"),
             ) {
-                Text("Retry")
+                Text(s.tailscale_retry_button)
             }
         }
     }

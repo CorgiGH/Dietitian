@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * 2-state magic-link onboarding surface — `EmailEntry` -> `CheckEmail`.
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun OnboardingScreen(actions: OnboardingActions) {
+    val s = strings()
     var email by remember { mutableStateOf("") }
     var stage by remember { mutableStateOf<OnboardingStage>(OnboardingStage.EmailEntry) }
     var success by remember { mutableStateOf(false) }
@@ -52,13 +54,13 @@ fun OnboardingScreen(actions: OnboardingActions) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.Start,
     ) {
-        when (val s = stage) {
+        when (val stg = stage) {
             is OnboardingStage.EmailEntry -> {
-                Text(text = "Sign in with magic link")
+                Text(text = s.onboarding_sign_in_title)
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email") },
+                    label = { Text(s.onboarding_email_label) },
                     modifier = Modifier.testTag("onboarding-email-input"),
                 )
                 Spacer(Modifier.height(8.dp))
@@ -69,28 +71,28 @@ fun OnboardingScreen(actions: OnboardingActions) {
                     },
                     modifier = Modifier.testTag("onboarding-send-magic-link"),
                 ) {
-                    Text("Send magic link")
+                    Text(s.onboarding_send_magic_link_button)
                 }
             }
 
             is OnboardingStage.CheckEmail -> {
                 Text(
-                    text = "Check your email",
+                    text = s.onboarding_check_email_title,
                     modifier = Modifier.testTag("onboarding-check-email"),
                 )
                 Text(
-                    text = "Open the magic link on the SAME device where you started.",
+                    text = s.onboarding_same_device_copy,
                     modifier = Modifier.testTag("onboarding-same-device-copy"),
                 )
                 TextButton(
-                    onClick = { actions.onResend(s.email) },
+                    onClick = { actions.onResend(stg.email) },
                     modifier = Modifier.testTag("onboarding-resend-link"),
                 ) {
-                    Text("Resend link")
+                    Text(s.onboarding_resend_link_button)
                 }
                 if (success) {
                     Text(
-                        text = "Signed in.",
+                        text = s.onboarding_success_label,
                         modifier = Modifier.testTag("onboarding-success"),
                     )
                 }

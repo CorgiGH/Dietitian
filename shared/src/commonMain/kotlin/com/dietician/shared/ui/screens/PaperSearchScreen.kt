@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.components.PaperResultCard
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Paper search surface.
@@ -47,6 +48,7 @@ fun PaperSearchScreen(
     onOpenDetail: (String) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
+    val s = strings()
     val snackbarHost = remember { SnackbarHostState() }
     LaunchedEffect(state.errorToast) {
         state.errorToast?.let {
@@ -71,13 +73,13 @@ fun PaperSearchScreen(
                 modifier = Modifier
                     .weight(1f)
                     .testTag("paper-search-query"),
-                label = { Text("Search papers + corpora") },
+                label = { Text(s.paper_search_label) },
                 singleLine = true,
             )
             TextButton(
                 onClick = viewModel::submitQuery,
                 modifier = Modifier.testTag("paper-search-submit"),
-            ) { Text("Search") }
+            ) { Text(s.paper_search_submit_button) }
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -100,7 +102,7 @@ fun PaperSearchScreen(
                         .testTag("paper-search-not-implemented"),
                 ) {
                     Text(
-                        text = "Search coming soon, embedding service is still ramping",
+                        text = s.paper_search_not_implemented,
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -113,8 +115,14 @@ fun PaperSearchScreen(
                         .testTag("paper-search-empty"),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(text = "No matches", style = MaterialTheme.typography.titleSmall)
-                        Text(text = "Try a broader query", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = s.paper_search_no_matches_title,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = s.paper_search_broader_query_body,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                 }
             }

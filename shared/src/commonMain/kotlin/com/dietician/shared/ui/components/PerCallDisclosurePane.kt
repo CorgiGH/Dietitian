@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 import com.dietician.shared.ui.screens.DisclosureInfo
 
 /**
@@ -27,6 +28,7 @@ fun PerCallDisclosurePane(
     info: DisclosureInfo,
     onOpenAuditRow: (String) -> Unit,
 ) {
+    val s = strings()
     Surface(
         modifier = Modifier.padding(top = 4.dp),
         color = MaterialTheme.colorScheme.surface,
@@ -52,7 +54,7 @@ fun PerCallDisclosurePane(
                 onClick = { onOpenAuditRow(info.callUuid) },
                 modifier = Modifier.testTag("coach-disclosure-open-audit-${info.callUuid}"),
             ) {
-                Text("Open audit row")
+                Text(s.per_call_open_audit_row_button)
             }
         }
     }

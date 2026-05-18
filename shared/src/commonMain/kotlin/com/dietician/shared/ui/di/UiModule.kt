@@ -21,6 +21,7 @@ import com.dietician.shared.ui.screens.HomeLoader
 import com.dietician.shared.ui.screens.HomeViewModel
 import com.dietician.shared.ui.screens.MeProfile
 import com.dietician.shared.ui.screens.PantryViewModel
+import com.dietician.shared.ui.screens.PaperSearchViewModel
 import com.dietician.shared.ui.screens.ReceiptUploadViewModel
 import com.dietician.shared.ui.screens.SettingsViewModel
 import com.dietician.shared.ui.settings.InMemorySettingsStore
@@ -100,6 +101,7 @@ val uiModule: Module = module {
         )
     }
     factory { ReceiptUploadViewModel(repo = get(), coroutineScope = get()) }
+    factory { PaperSearchViewModel(repo = get(), coroutineScope = get()) }
 }
 
 /* ---------- Stubs ---------- */
