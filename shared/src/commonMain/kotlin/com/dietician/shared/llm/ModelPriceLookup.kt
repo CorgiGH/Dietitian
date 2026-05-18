@@ -26,7 +26,11 @@ object ModelPriceLookup {
         "openai/gpt-4o" to Price(inputPerMTok = 250, outputPerMTok = 1000),
         "meta-llama/llama-3.3-70b-instruct" to Price(inputPerMTok = 90, outputPerMTok = 90),
         "groq/llama-3.3-70b-versatile" to Price(inputPerMTok = 59, outputPerMTok = 79),
+        // Direct-Groq-API name (chain entry uses bare model id; price duplicate kept in sync).
+        "llama-3.3-70b-versatile" to Price(inputPerMTok = 59, outputPerMTok = 79),
         "voyage/voyage-4-lite" to Price(inputPerMTok = 2, outputPerMTok = 0),
+        // Direct OpenRouter -> bare "claude-3-5-sonnet-latest" — ClaudeMaxCli uses CLI bundle pricing (zero per-call).
+        "claude-3-5-sonnet-latest" to Price(inputPerMTok = 300, outputPerMTok = 1500),
     )
 
     /** @return Price entry for [model], or null if Batch B has not added pricing yet. */
