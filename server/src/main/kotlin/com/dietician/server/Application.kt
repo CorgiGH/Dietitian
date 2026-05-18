@@ -5,6 +5,8 @@ import com.dietician.server.cron.BackupCron
 import com.dietician.server.cron.CronBootstrap
 import com.dietician.server.cron.nextDayAtTime
 import com.dietician.server.di.dieticianModule
+import com.dietician.server.di.llmAdaptersOnlyModule
+import com.dietician.server.di.llmModule
 import com.dietician.server.observability.installObservability
 import com.dietician.server.routes.installAuditExportRoutes
 import com.dietician.server.routes.installAuthRoutes
@@ -48,9 +50,20 @@ import org.koin.logger.slf4jLogger
  * false-positives.
  */
 fun Application.module() {
+    // Plan-2 Task 28: include the full LlmModule when env keys are present; otherwise fall
+    // back to adapters-only so the server still boots in dev/test without LLM upstream.
+    // Production must set OPENROUTER_API_KEY + GROQ_API_KEY (lead providers for the default
+    // chains) — see LlmRouterFactory.create for fail-fast contract.
+    val haveLlmEnvKeys =
+        !System.getenv("OPENROUTER_API_KEY").isNullOrBlank() &&
+            !System.getenv("GROQ_API_KEY").isNullOrBlank()
     install(Koin) {
         slf4jLogger()
-        modules(dieticianModule)
+        if (haveLlmEnvKeys) {
+            modules(dieticianModule, llmModule)
+        } else {
+            modules(dieticianModule, llmAdaptersOnlyModule)
+        }
     }
 
     install(ContentNegotiation) {

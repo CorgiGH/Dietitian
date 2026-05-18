@@ -7,6 +7,7 @@
     <ID>LongMethod:MeRoutes.kt$fun Application.installMeRoutes()</ID>
     <ID>LongParameterList:AuditLogWriter.kt$AuditLogWriter$( subjectId: UUID?, kind: String, model: String? = null, promptHash: String? = null, responseHash: String? = null, inputTokens: Int? = null, outputTokens: Int? = null, costCents: Int? = null, requestId: String? = null, extra: JsonObject? = null, )</ID>
     <ID>LongParameterList:AuthService.kt$AuthService$( private val subjects: SubjectRepository, private val magicLinks: MagicLinkService, private val sessions: SessionStore, private val email: EmailSender, private val audit: AuditLogWriter, private val fromAddress: String = System.getenv("DIETICIAN_MAIL_FROM") ?: "onboarding@resend.dev", private val magicLinkBaseUrl: String = System.getenv("DIETICIAN_MAGIC_LINK_BASE") ?: "https://dietician.local/auth/magic-link", )</ID>
+    <ID>LongParameterList:LlmRouterFactory.kt$LlmRouterFactory$( httpClient: HttpClient, credentialStore: SubjectCredentialStore, budget: BudgetLedger, auditLog: AuditLogSink, config: RouterConfig = DefaultRouterConfig.default, env: (String) -> String? = System::getenv, )</ID>
     <ID>MagicNumber:Application.kt$30</ID>
     <ID>MagicNumber:Application.kt$4</ID>
     <ID>MagicNumber:AuditExportRoutes.kt$30</ID>
@@ -44,6 +45,7 @@
     <ID>MagicNumber:Main.kt$5_000</ID>
     <ID>MagicNumber:Main.kt$9091</ID>
     <ID>MagicNumber:PaperFetchQueueRepository.kt$PaperFetchQueueRepository$3</ID>
+    <ID>MagicNumber:PiiReviewQueueImpl.kt$PiiReviewQueueImpl$3</ID>
     <ID>MagicNumber:SessionStore.kt$SessionStore$30</ID>
     <ID>MagicNumber:SessionStore.kt$SessionStore$32</ID>
     <ID>MagicNumber:SubjectRepository.kt$SubjectRepository$3</ID>
@@ -52,6 +54,8 @@
     <ID>MatchingDeclarationName:EmbedRoutes.kt$EmbedRequest</ID>
     <ID>MaxLineLength:AuditExportRoutesTest.kt$AuditExportRoutesTest.Companion$st.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO audit_export_app")</ID>
     <ID>MaxLineLength:AuthServiceTest.kt$AuthServiceTest$private</ID>
+    <ID>MaxLineLength:BudgetRepositoryAdapterTest.kt$BudgetRepositoryAdapterTest$"VALUES (?, 'openrouter', date_trunc('month', now())::DATE, (date_trunc('month', now()) + INTERVAL '1 month - 1 day')::DATE, 5) "</ID>
+    <ID>MaxLineLength:BudgetRepositoryAdapterTest.kt$BudgetRepositoryAdapterTest.Companion$st.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO budget_adapter_test")</ID>
     <ID>MaxLineLength:BudgetRepositoryTest.kt$BudgetRepositoryTest$"VALUES (?, 'voyage', date_trunc('month', now())::DATE, (date_trunc('month', now()) + INTERVAL '1 month - 1 day')::DATE, 10) "</ID>
     <ID>MaxLineLength:ConsentRepositoryTest.kt$ConsentRepositoryTest.Companion$st.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO consent_app_test")</ID>
     <ID>MaxLineLength:CredentialRepositoryTest.kt$CredentialRepositoryTest.Companion$st.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO credential_app_test")</ID>
