@@ -15,7 +15,11 @@
     {"table": "pantry_events", "column": "synced_at", "reason": "client-side SQLite uses NULL-as-pending; Postgres always-set"},
     {"table": "meal_events", "column": "synced_at", "reason": "see above"},
     {"table": "weight_events", "column": "synced_at", "reason": "see above"},
-    {"table": "receipt_events", "column": "synced_at", "reason": "see above"}
+    {"table": "receipt_events", "column": "synced_at", "reason": "see above"},
+    {"table": "pantry_events", "column": "subject_id", "reason": "Plan-3 V013 server-only multi-subject discriminator; client SQLite is single-subject (one install = one Victor)"},
+    {"table": "meal_events", "column": "subject_id", "reason": "see above"},
+    {"table": "weight_events", "column": "subject_id", "reason": "see above"},
+    {"table": "receipt_events", "column": "subject_id", "reason": "see above"}
   ],
   "client_only_tables": [
     "outbox", "outbox_dead", "pantry_snapshot", "pantry_snapshot_checkpoint",
@@ -39,6 +43,11 @@
     "price_observations", "price_posterior", "budgets", "llm_budget",
     "food_composition", "nutrient_dri", "food_safety_temps",
     "substitution_rules", "cooking_methods", "glycemic_index",
-    "recipes", "user_location_current"
+    "recipes", "user_location_current",
+    "subjects", "devices", "consents", "ropa_entries", "audit_log",
+    "subject_credentials", "claudemax_message_counter", "reservations",
+    "webauthn_credentials", "paper_fetch_queue", "mega_receipt_dedupe_log",
+    "pii_review_queue", "moderator_sampling_queue", "tombstone_events",
+    "corpus_embeddings"
   ]
 }
