@@ -8,6 +8,9 @@ android-compile = "35"
 
 # Networking + serialization
 ktor = "3.0.1"
+ktor-client-auth = "3.0.1"
+ktor-client-logging = "3.0.1"
+ktor-client-mock = "3.0.1"
 kotlinx-serialization = "1.7.3"
 kotlinx-coroutines = "1.9.0"
 kotlinx-datetime = "0.6.1"
@@ -93,6 +96,9 @@ ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.r
 ktor-client-darwin = { group = "io.ktor", name = "ktor-client-darwin", version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
+ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
+ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version.ref = "ktor" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 # Ktor server (JVM-only :server)

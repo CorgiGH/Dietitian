@@ -35,6 +35,8 @@ kotlin {
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.client.websockets)
+                implementation(libs.ktor.client.auth)
+                implementation(libs.ktor.client.logging)
                 implementation(libs.ktor.serialization.kotlinx.json)
                 implementation(libs.sqldelight.runtime)
                 implementation(libs.sqldelight.coroutines)
@@ -72,6 +74,7 @@ kotlin {
                 implementation(libs.turbine)
                 implementation(libs.kotest.assertions.core)
                 implementation(libs.kotest.property)
+                implementation(libs.ktor.client.mock)
             }
         }
 
