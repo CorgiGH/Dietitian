@@ -32,5 +32,13 @@ subprojects {
         buildUponDefaultConfig = true
         allRules = false
         config.setFrom(files("${rootProject.projectDir}/config/detekt/detekt.yml"))
+        // [Plan-3 Batch C / Task 42 + Council 1779073963 Operations action]
+        // 80 pre-existing detekt issues across server + shared exist as of the
+        // Batch C merge. New code MUST NOT add issues; the baseline captures the
+        // current floor so CI stays green while the team works the legacy down.
+        // Regenerate with `./gradlew :<module>:detektBaseline` after intentional
+        // cleanup commits.
+        val baselineFile = file("detekt-baseline.xml")
+        if (baselineFile.exists()) baseline = baselineFile
     }
 }

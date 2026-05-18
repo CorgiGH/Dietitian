@@ -1,0 +1,75 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:AuditExportRoutes.kt$fun Application.installAuditExportRoutes()</ID>
+    <ID>LongMethod:DsarZipBuilder.kt$DsarZipBuilder$fun build( subjectId: UUID, eventRepo: EventRepository, consentRepo: ConsentRepository, credentialRepo: CredentialRepository, auditRepo: AuditRepository, ): ByteArray</ID>
+    <ID>LongMethod:MeRoutes.kt$fun Application.installMeRoutes()</ID>
+    <ID>LongParameterList:AuditLogWriter.kt$AuditLogWriter$( subjectId: UUID?, kind: String, model: String? = null, promptHash: String? = null, responseHash: String? = null, inputTokens: Int? = null, outputTokens: Int? = null, costCents: Int? = null, requestId: String? = null, extra: JsonObject? = null, )</ID>
+    <ID>LongParameterList:AuthService.kt$AuthService$( private val subjects: SubjectRepository, private val magicLinks: MagicLinkService, private val sessions: SessionStore, private val email: EmailSender, private val audit: AuditLogWriter, private val fromAddress: String = System.getenv("DIETICIAN_MAIL_FROM") ?: "onboarding@resend.dev", private val magicLinkBaseUrl: String = System.getenv("DIETICIAN_MAGIC_LINK_BASE") ?: "https://dietician.local/auth/magic-link", )</ID>
+    <ID>MagicNumber:Application.kt$30</ID>
+    <ID>MagicNumber:Application.kt$4</ID>
+    <ID>MagicNumber:AuditExportRoutes.kt$30</ID>
+    <ID>MagicNumber:AuditLogWriter.kt$AuditLogWriter$3</ID>
+    <ID>MagicNumber:AuditLogWriter.kt$AuditLogWriter$4</ID>
+    <ID>MagicNumber:AuditLogWriter.kt$AuditLogWriter$5</ID>
+    <ID>MagicNumber:AuditLogWriter.kt$AuditLogWriter$6</ID>
+    <ID>MagicNumber:AuditLogWriter.kt$AuditLogWriter$7</ID>
+    <ID>MagicNumber:AuditLogWriter.kt$AuditLogWriter$8</ID>
+    <ID>MagicNumber:AuditLogWriter.kt$AuditLogWriter$9</ID>
+    <ID>MagicNumber:AuditPdfRenderer.kt$AuditPdfRenderer$200</ID>
+    <ID>MagicNumber:AuditPdfRenderer.kt$AuditPdfRenderer$50f</ID>
+    <ID>MagicNumber:AuditPdfRenderer.kt$AuditPdfRenderer$760f</ID>
+    <ID>MagicNumber:AuditRepository.kt$AuditRepository$3</ID>
+    <ID>MagicNumber:AuditRepository.kt$AuditRepository$4</ID>
+    <ID>MagicNumber:BudgetRepository.kt$BudgetRepository$3</ID>
+    <ID>MagicNumber:BudgetRepository.kt$BudgetRepository$4</ID>
+    <ID>MagicNumber:ConsentRepository.kt$ConsentRepository$3</ID>
+    <ID>MagicNumber:ConsentRepository.kt$ConsentRepository$4</ID>
+    <ID>MagicNumber:CredentialRepository.kt$CredentialRepository$3</ID>
+    <ID>MagicNumber:CredentialRepository.kt$CredentialRepository$4</ID>
+    <ID>MagicNumber:CredentialRepository.kt$CredentialRepository$5</ID>
+    <ID>MagicNumber:CredentialRepository.kt$CredentialRepository$6</ID>
+    <ID>MagicNumber:DatabaseFactory.kt$DatabaseFactory$1_800_000</ID>
+    <ID>MagicNumber:DatabaseFactory.kt$DatabaseFactory$30_000</ID>
+    <ID>MagicNumber:DatabaseFactory.kt$DatabaseFactory$600_000</ID>
+    <ID>MagicNumber:DsarZipBuilder.kt$DsarZipBuilder$8</ID>
+    <ID>MagicNumber:DsarZipBuilder.kt$DsarZipBuilder$90</ID>
+    <ID>MagicNumber:EmbedRoutes.kt$4</ID>
+    <ID>MagicNumber:EventRepository.kt$EventRepository$3</ID>
+    <ID>MagicNumber:EventRepository.kt$EventRepository$4</ID>
+    <ID>MagicNumber:MagicLinkService.kt$MagicLinkService$15</ID>
+    <ID>MagicNumber:MagicLinkService.kt$MagicLinkService$32</ID>
+    <ID>MagicNumber:Main.kt$2_000</ID>
+    <ID>MagicNumber:Main.kt$5_000</ID>
+    <ID>MagicNumber:Main.kt$9091</ID>
+    <ID>MagicNumber:PaperFetchQueueRepository.kt$PaperFetchQueueRepository$3</ID>
+    <ID>MagicNumber:SessionStore.kt$SessionStore$30</ID>
+    <ID>MagicNumber:SessionStore.kt$SessionStore$32</ID>
+    <ID>MagicNumber:SubjectRepository.kt$SubjectRepository$3</ID>
+    <ID>MagicNumber:SyncRoutes.kt$500</ID>
+    <ID>MagicNumber:TailnetDiscovery.kt$TailnetDiscovery$5</ID>
+    <ID>MatchingDeclarationName:EmbedRoutes.kt$EmbedRequest</ID>
+    <ID>MaxLineLength:AuditExportRoutesTest.kt$AuditExportRoutesTest.Companion$st.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO audit_export_app")</ID>
+    <ID>MaxLineLength:AuthServiceTest.kt$AuthServiceTest$private</ID>
+    <ID>MaxLineLength:BudgetRepositoryTest.kt$BudgetRepositoryTest$"VALUES (?, 'voyage', date_trunc('month', now())::DATE, (date_trunc('month', now()) + INTERVAL '1 month - 1 day')::DATE, 10) "</ID>
+    <ID>MaxLineLength:ConsentRepositoryTest.kt$ConsentRepositoryTest.Companion$st.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO consent_app_test")</ID>
+    <ID>MaxLineLength:CredentialRepositoryTest.kt$CredentialRepositoryTest.Companion$st.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO credential_app_test")</ID>
+    <ID>MaxLineLength:DatabaseFactoryTest.kt$DatabaseFactoryTest$"INSERT INTO pantry_events(event_uuid, device_id, originated_at, sku_uuid, delta_qty, unit, subject_id) "</ID>
+    <ID>MaxLineLength:EmbedRoutesTest.kt$EmbedRoutesTest$"VALUES (?, 'voyage', date_trunc('month', now())::DATE, (date_trunc('month', now()) + INTERVAL '1 month - 1 day')::DATE, 0) "</ID>
+    <ID>MaxLineLength:MeRoutesTest.kt$MeRoutesTest$"SELECT count(*) FROM audit_log WHERE subject_id = '$subjectId' AND kind = 'subject_credential_revoked'"</ID>
+    <ID>MaxLineLength:ReceiptsRoutesTest.kt$ReceiptsRoutesTest$fun</ID>
+    <ID>MaxLineLength:ReceiptsRoutesTest.kt$ReceiptsRoutesTest.Companion$st.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO receipts_app_test")</ID>
+    <ID>MaxLineLength:RedactRoutesTest.kt$RedactRoutesTest$val payload = """{"event_uuid":"$evt","device_id":"dev-x","originated_at":"2026-05-18T10:00:00Z","synced_at":"2026-05-18T10:00:01Z","sku_uuid":"$sku","delta_qty":1.0,"unit":"g","subject_id":"$subjectId"}"""</ID>
+    <ID>MaxLineLength:SubjectRepository.kt$SubjectRepository$if (emailForMagicLink != null) ps.setString(3, emailForMagicLink) else ps.setNull(3, java.sql.Types.VARCHAR)</ID>
+    <ID>MaxLineLength:SubjectRepositoryTest.kt$SubjectRepositoryTest.Companion$st.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO subject_app_test")</ID>
+    <ID>MaxLineLength:SyncRoutesTest.kt$SyncRoutesTest$val body = """{"deviceId":"$deviceId","events":[{"tableName":"pantry_events","eventUuid":"$evt","payloadJson":${kotlinx.serialization.json.JsonPrimitive(payload)}}]}"""</ID>
+    <ID>MaxLineLength:SyncRoutesTest.kt$SyncRoutesTest$val payload = """{"event_uuid":"$evt","device_id":"$deviceId","originated_at":"2026-05-18T10:00:00Z","synced_at":"2026-05-18T10:00:01Z","sku_uuid":"$sku","delta_qty":1.0,"unit":"g","subject_id":"$subjectId"}"""</ID>
+    <ID>MaxLineLength:SyncRoutesTest.kt$SyncRoutesTest$val payload = """{"event_uuid":"$evt","device_id":"dev-x","originated_at":"2026-05-18T10:00:00Z","synced_at":"2026-05-18T10:00:01Z","sku_uuid":"$sku","delta_qty":1.0,"unit":"g","subject_id":"$subjectId"}"""</ID>
+    <ID>MayBeConst:DatabaseFactoryTest.kt$DatabaseFactoryTest.Companion$// Run Flyway migrations + create a non-superuser app role ONCE per class. // RLS bypass-by-table-owner is the canonical Postgres footgun; the // test must connect as a non-owner role to exercise real RLS posture. private val appPassword = "dietician_app_test_pw"</ID>
+    <ID>MayBeConst:RateLimiter.kt$RateLimiter.Companion$// Council 1779120000 RC9 + spec §5.5 baseline limits. val DEFAULT_LIMIT: Int = 30</ID>
+    <ID>MayBeConst:RateLimiter.kt$RateLimiter.Companion$val MAGIC_LINK_LIMIT: Int = 5</ID>
+    <ID>TooGenericExceptionCaught:AuthService.kt$AuthService$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:DatabaseFactory.kt$DatabaseFactory$e: Throwable</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -25,5 +25,16 @@ jobs:
         run: ./gradlew :shared:testDebugUnitTest
       - name: Server tests (Flyway + schema parity, Docker-backed)
         run: ./gradlew :server:test
+      # Plan-3 Task 41: explicit CI guards so a regression here fails fast in
+      # its own job step (rather than buried in the giant :server:test log).
+      # These are the BREAK-glass tests — every one of them encodes a
+      # legal/council mandate.
+      - name: Server CI guards (Plan-3 break-glass)
+        run: |
+          ./gradlew :server:test \
+            --tests "com.dietician.server.db.RlsBypassPreventionTest" \
+            --tests "com.dietician.server.ci.EmotionInferencePreventionTest" \
+            --tests "com.dietician.server.ci.PiiRedactionRequiredTest" \
+            --tests "com.dietician.server.db.MigrationOrderingTest"
       - name: Assemble all
         run: ./gradlew :server:assemble :desktopApp:assemble :androidApp:assembleDebug

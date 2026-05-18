@@ -36,6 +36,11 @@ dependencies {
     implementation(libs.ktor.server.auth)
     implementation(libs.ktor.serialization.kotlinx.json)
 
+    // Ktor client (Resend HTTP wrapper — magic-link email)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+
     // Postgres (canonical store)
     implementation(libs.postgresql.jdbc)
     implementation(libs.hikari)
@@ -58,6 +63,19 @@ dependencies {
     // File watcher
     implementation(libs.directory.watcher)
 
+    // PDF generation (Task 31 — /me/audit PDF export, Art 12 trace).
+    implementation(libs.pdfbox)
+
+    // DI (Koin) — server-side Ktor wiring
+    implementation(libs.koin.core)
+    implementation(libs.koin.ktor)
+    implementation(libs.koin.logger.slf4j)
+
+    // Observability (Micrometer Prometheus on :9091, structured JSON logs)
+    implementation(libs.ktor.server.metrics.micrometer)
+    implementation(libs.micrometer.prometheus)
+    implementation(libs.logstash.logback.encoder)
+
     // Logging
     implementation(libs.slf4j.api)
     implementation(libs.logback.classic)
@@ -65,6 +83,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(libs.junit.jupiter)
+    testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.kotlinx.serialization.json)
@@ -78,6 +97,14 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // Cap test JVM heap; Windows commit-charge pressure (Docker vmmem + WSL + dev tools)
+    // crashes default-heap (~3.5G) test workers with G1 virtual-space mmap failures.
+    // 768m is enough for Testcontainers + Flyway + JDBC + JUnit + small SQLDelight schema.
+    maxHeapSize = "768m"
+    minHeapSize = "256m"
+    jvmArgs("-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200", "-XX:MaxMetaspaceSize=256m")
+    maxParallelForks = 1
+    forkEvery = 0
 }
 
 ktor {
