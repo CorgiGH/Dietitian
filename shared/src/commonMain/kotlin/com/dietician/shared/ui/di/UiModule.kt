@@ -21,6 +21,9 @@ import com.dietician.shared.ui.screens.HomeLoader
 import com.dietician.shared.ui.screens.HomeViewModel
 import com.dietician.shared.ui.screens.MeProfile
 import com.dietician.shared.ui.screens.PantryViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.koin.core.module.Module
@@ -63,6 +66,12 @@ val uiModule: Module = module {
     single<AuditLogSink> { StubAuditLogSink() }
     single<RecipeReader> { StubRecipeReader() }
 
+    // UI-side coroutine scope. We use Dispatchers.Default because kotlinx-coroutines
+    // doesn't ship Dispatchers.Main for the Compose Desktop JVM (would need
+    // kotlinx-coroutines-swing). StateFlow updates are thread-safe so the Compose
+    // collectAsState path handles UI-thread crossings on its own.
+    single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+
     // ViewModels.
     factory { HomeViewModel(loader = get(), plannedCutController = PlannedCutController()) }
     factory { FoodLogViewModel() }
@@ -73,9 +82,16 @@ val uiModule: Module = module {
             stream = get(),
             audit = get(),
             subjectIdProvider = { "stub-subject-0000" },
+            coroutineScope = get(),
         )
     }
-    factory { AuditLogViewModel(repo = get(), saveFile = ::saveExportedFile) }
+    factory {
+        AuditLogViewModel(
+            repo = get(),
+            saveFile = ::saveExportedFile,
+            coroutineScope = get(),
+        )
+    }
 }
 
 /* ---------- Stubs ---------- */
