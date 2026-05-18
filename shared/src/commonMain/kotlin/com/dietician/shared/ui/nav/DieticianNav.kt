@@ -24,6 +24,10 @@ import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.dietician.shared.ui.auth.OnboardingActions
+import com.dietician.shared.ui.auth.OnboardingScreen
+import com.dietician.shared.ui.components.AILiteracyBanner
+import com.dietician.shared.ui.components.AILiteracyVersionGate
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.i18n.DieticianLocaleProvider
 import com.dietician.shared.ui.i18n.Strings
@@ -52,18 +56,33 @@ fun DieticianApp(
 ) {
     val settingsStore = koinInject<SettingsStore>()
     val settings by settingsStore.state.collectAsState()
+    val onboardingActions = koinInject<OnboardingActions>()
+    val needsAiLiteracyAck = AILiteracyVersionGate.shouldShow(settings.aiLiteracyAckedVersion)
     DieticianLocaleProvider(locale = settings.locale) {
         DieticianTheme(
             darkTheme = settings.darkTheme,
             useAccessibleTypography = settings.useAccessibleTypography,
         ) {
-            Navigator(screen = DieticianScreen.Home) {
-                Scaffold(
-                    bottomBar = { DieticianBottomNav() },
-                ) { padding ->
-                    Box(Modifier.padding(padding)) {
-                        CurrentScreen()
+            if (!settings.onboarded) {
+                OnboardingScreen(actions = onboardingActions)
+            } else {
+                Navigator(screen = DieticianScreen.Home) {
+                    Scaffold(
+                        bottomBar = { DieticianBottomNav() },
+                    ) { padding ->
+                        Box(Modifier.padding(padding)) {
+                            CurrentScreen()
+                        }
                     }
+                }
+                if (needsAiLiteracyAck) {
+                    AILiteracyBanner(
+                        onAcknowledge = {
+                            settingsStore.setAiLiteracyAckedVersion(
+                                AILiteracyVersionGate.CURRENT_VERSION,
+                            )
+                        },
+                    )
                 }
             }
         }

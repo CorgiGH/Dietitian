@@ -112,6 +112,7 @@ interface Strings {
     val onboarding_same_device_copy: String
     val onboarding_resend_link_button: String
     val onboarding_success_label: String
+    val onboarding_simulate_verify_button: String
     val magic_link_verifying: String
     val magic_link_success: String
     val magic_link_back_to_sign_in: String
@@ -286,6 +287,8 @@ object Strings_en : Strings {
         "Open the magic link on the SAME device where you started."
     override val onboarding_resend_link_button: String = "Resend link"
     override val onboarding_success_label: String = "Signed in."
+    override val onboarding_simulate_verify_button: String =
+        "Simulate verify (dev — backend offline)"
     override val magic_link_verifying: String = "Verifying your magic link…"
     override val magic_link_success: String = "Signed in — taking you home."
     override val magic_link_back_to_sign_in: String = "Back to sign-in"
@@ -456,6 +459,8 @@ object Strings_ro : Strings {
         "Deschide link-ul magic pe ACELAȘI dispozitiv de unde ai pornit."
     override val onboarding_resend_link_button: String = "Retrimite link"
     override val onboarding_success_label: String = "Conectat."
+    override val onboarding_simulate_verify_button: String =
+        "Simulează verificarea (dev — backend offline)"
     override val magic_link_verifying: String = "Se verifică link-ul magic…"
     override val magic_link_success: String = "Conectat — te ducem acasă."
     override val magic_link_back_to_sign_in: String = "Înapoi la conectare"

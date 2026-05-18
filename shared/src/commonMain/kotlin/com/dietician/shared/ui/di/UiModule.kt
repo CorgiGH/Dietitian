@@ -5,6 +5,8 @@ import com.dietician.shared.llm.AuditLogSink
 import com.dietician.shared.llm.LlmChunk
 import com.dietician.shared.llm.LlmRequest
 import com.dietician.shared.llm.LlmStream
+import com.dietician.shared.ui.auth.OnboardingActions
+import com.dietician.shared.ui.auth.OnboardingActionsImpl
 import com.dietician.shared.ui.components.PlannedCutController
 import com.dietician.shared.ui.components.TodayNutrientsState
 import com.dietician.shared.ui.data.PantryItem
@@ -71,6 +73,7 @@ val uiModule: Module = module {
     single<AuditLogSink> { StubAuditLogSink() }
     single<RecipeReader> { StubRecipeReader() }
     single<SettingsStore> { InMemorySettingsStore() }
+    single<OnboardingActions> { OnboardingActionsImpl(settingsStore = get()) }
 
     // UI-side coroutine scope. We use Dispatchers.Default because kotlinx-coroutines
     // doesn't ship Dispatchers.Main for the Compose Desktop JVM (would need
