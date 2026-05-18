@@ -15,6 +15,8 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -26,21 +28,35 @@ import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.i18n.DieticianLocaleProvider
 import com.dietician.shared.ui.i18n.Strings
 import com.dietician.shared.ui.i18n.strings
+import com.dietician.shared.ui.settings.SettingsStore
 import com.dietician.shared.ui.theme.DieticianTheme
+import org.koin.compose.koinInject
 
 /**
  * Top-level Dietician app entry point. Wraps theme + locale + Voyager
  * navigator + bottom nav scaffolding. Composables-only — platform launch
  * code in androidApp / desktopApp constructs this.
+ *
+ * **Settings propagation (iter 3):** collects the singleton [SettingsStore]
+ * from Koin and uses its [SettingsState] for `locale` / `darkTheme` /
+ * `useAccessibleTypography`. The explicit constructor params remain as
+ * fallback defaults — they only apply if no [SettingsStore] is registered
+ * (some narrow tests inject the bottom-nav composable directly without the
+ * full Koin context).
  */
 @Composable
 fun DieticianApp(
-    locale: AppLocale = AppLocale.EN,
-    darkTheme: Boolean = false,
-    useAccessibleTypography: Boolean = false,
+    @Suppress("UNUSED_PARAMETER") locale: AppLocale = AppLocale.EN,
+    @Suppress("UNUSED_PARAMETER") darkTheme: Boolean = false,
+    @Suppress("UNUSED_PARAMETER") useAccessibleTypography: Boolean = false,
 ) {
-    DieticianLocaleProvider(locale = locale) {
-        DieticianTheme(darkTheme = darkTheme, useAccessibleTypography = useAccessibleTypography) {
+    val settingsStore = koinInject<SettingsStore>()
+    val settings by settingsStore.state.collectAsState()
+    DieticianLocaleProvider(locale = settings.locale) {
+        DieticianTheme(
+            darkTheme = settings.darkTheme,
+            useAccessibleTypography = settings.useAccessibleTypography,
+        ) {
             Navigator(screen = DieticianScreen.Home) {
                 Scaffold(
                     bottomBar = { DieticianBottomNav() },

@@ -83,12 +83,29 @@ class DieticianNavMountTest {
     }
 
     @Test
-    fun `Settings tab still shows placeholder (no SettingsScreen yet)`() = runComposeUiTest {
+    fun `Settings tab mounts real SettingsScreen with locale + theme toggles`() = runComposeUiTest {
         setContent {
             DieticianApp(locale = AppLocale.EN)
         }
         onNodeWithTag("nav-settings").performClick()
-        onNodeWithTag("placeholder-settings").assertIsDisplayed()
+        onNodeWithTag("settings-screen").assertIsDisplayed()
+        onNodeWithTag("settings-locale-en").assertIsDisplayed()
+        onNodeWithTag("settings-locale-ro").assertIsDisplayed()
+        onNodeWithTag("settings-dark-theme").assertIsDisplayed()
+        onNodeWithTag("settings-accessible-typography").assertIsDisplayed()
+        onNodeWithTag("settings-coach-disabled").assertIsDisplayed()
+        onNodeWithTag("settings-view-audit-log").assertIsDisplayed()
+        onNodeWithTag("settings-about").assertIsDisplayed()
+    }
+
+    @Test
+    fun `Settings to AuditLog deep-link works`() = runComposeUiTest {
+        setContent {
+            DieticianApp(locale = AppLocale.EN)
+        }
+        onNodeWithTag("nav-settings").performClick()
+        onNodeWithTag("settings-view-audit-log").performClick()
+        onNodeWithTag("audit-log-screen").assertIsDisplayed()
     }
 
     @Test

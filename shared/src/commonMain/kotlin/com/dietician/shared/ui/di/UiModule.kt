@@ -21,6 +21,9 @@ import com.dietician.shared.ui.screens.HomeLoader
 import com.dietician.shared.ui.screens.HomeViewModel
 import com.dietician.shared.ui.screens.MeProfile
 import com.dietician.shared.ui.screens.PantryViewModel
+import com.dietician.shared.ui.screens.SettingsViewModel
+import com.dietician.shared.ui.settings.InMemorySettingsStore
+import com.dietician.shared.ui.settings.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -65,6 +68,7 @@ val uiModule: Module = module {
     single<LlmStream> { StubLlmStream() }
     single<AuditLogSink> { StubAuditLogSink() }
     single<RecipeReader> { StubRecipeReader() }
+    single<SettingsStore> { InMemorySettingsStore() }
 
     // UI-side coroutine scope. We use Dispatchers.Default because kotlinx-coroutines
     // doesn't ship Dispatchers.Main for the Compose Desktop JVM (would need
@@ -74,7 +78,7 @@ val uiModule: Module = module {
 
     // ViewModels.
     factory { HomeViewModel(loader = get(), plannedCutController = PlannedCutController()) }
-    factory { FoodLogViewModel() }
+    factory { FoodLogViewModel(coachDisabledProvider = { get<SettingsStore>().state.value.coachDisabled }) }
     factory { PantryViewModel(reader = get(), writer = get()) }
     factory { CookbookViewModel(reader = get(), ingest = get()) }
     factory {
@@ -82,9 +86,11 @@ val uiModule: Module = module {
             stream = get(),
             audit = get(),
             subjectIdProvider = { "stub-subject-0000" },
+            coachDisabledProvider = { get<SettingsStore>().state.value.coachDisabled },
             coroutineScope = get(),
         )
     }
+    factory { SettingsViewModel(store = get()) }
     factory {
         AuditLogViewModel(
             repo = get(),

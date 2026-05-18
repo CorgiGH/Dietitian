@@ -19,6 +19,8 @@ import com.dietician.shared.ui.screens.HomeScreen
 import com.dietician.shared.ui.screens.HomeViewModel
 import com.dietician.shared.ui.screens.PantryScreen
 import com.dietician.shared.ui.screens.PantryViewModel
+import com.dietician.shared.ui.screens.SettingsScreen
+import com.dietician.shared.ui.screens.SettingsViewModel
 import org.koin.compose.koinInject
 
 /**
@@ -106,7 +108,12 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Settings", key)
+            val viewModel = koinInject<SettingsViewModel>()
+            val navigator = LocalNavigator.currentOrThrow
+            SettingsScreen(
+                viewModel = viewModel,
+                onOpenAuditLog = { navigator.push(AuditLog) },
+            )
         }
     }
 
