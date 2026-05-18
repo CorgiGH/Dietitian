@@ -63,6 +63,9 @@ dependencies {
     // File watcher
     implementation(libs.directory.watcher)
 
+    // PDF generation (Task 31 — /me/audit PDF export, Art 12 trace).
+    implementation(libs.pdfbox)
+
     // DI (Koin) — server-side Ktor wiring
     implementation(libs.koin.core)
     implementation(libs.koin.ktor)

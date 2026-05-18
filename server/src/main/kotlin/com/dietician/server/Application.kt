@@ -2,6 +2,7 @@ package com.dietician.server
 
 import com.dietician.server.di.dieticianModule
 import com.dietician.server.observability.installObservability
+import com.dietician.server.routes.installAuditExportRoutes
 import com.dietician.server.routes.installAuthRoutes
 import com.dietician.server.routes.installEmbedRoutes
 import com.dietician.server.routes.installMeRoutes
@@ -108,4 +109,5 @@ fun Application.module() {
     installEmbedRoutes()
     installMeRoutes()
     installRedactRoutes()
+    installAuditExportRoutes()
 }
