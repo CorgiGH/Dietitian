@@ -41,7 +41,10 @@ class AuditPruneCron(
             conn.prepareStatement(
                 "SELECT prune_audit_log_older_than_12mo()",
             ).use { ps ->
-                ps.executeQuery().use { rs -> rs.next(); rs.getInt(1) }
+                ps.executeQuery().use { rs ->
+                    rs.next()
+                    rs.getInt(1)
+                }
             }
         }
         log.info("audit-prune: deleted {} rows older than 12 months", deleted)

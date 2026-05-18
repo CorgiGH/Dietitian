@@ -81,12 +81,18 @@ class AuditPruneCronTest {
         db.withSubject(subjectId) { conn ->
             conn.prepareStatement(
                 "INSERT INTO audit_log(subject_id, occurred_at, kind) VALUES (?, NOW(), 'sign_in')",
-            ).use { ps -> ps.setObject(1, subjectId); ps.executeUpdate() }
+            ).use { ps ->
+                ps.setObject(1, subjectId)
+                ps.executeUpdate()
+            }
             repeat(3) {
                 conn.prepareStatement(
                     "INSERT INTO audit_log(subject_id, occurred_at, kind) " +
                         "VALUES (?, NOW() - INTERVAL '13 months', 'sign_in')",
-                ).use { ps -> ps.setObject(1, subjectId); ps.executeUpdate() }
+                ).use { ps ->
+                    ps.setObject(1, subjectId)
+                    ps.executeUpdate()
+                }
             }
         }
 

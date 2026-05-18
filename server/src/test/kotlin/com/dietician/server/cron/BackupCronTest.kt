@@ -72,7 +72,7 @@ class BackupCronTest {
     // Sh stub for zstd-like behaviour: parse -o <out> from args, copy stdin
     // to that path. Kotlin uses `${'$'}` to emit a literal `$` so the shell
     // sees its own variables; the trimIndent block preserves shell newlines.
-    private val ZSTD_STUB_BODY: String =
+    private val zstdStubBody: String =
         "out=\"\"\n" +
             "while [ \"\$#\" -gt 0 ]; do\n" +
             "  case \"\$1\" in\n" +
@@ -100,7 +100,7 @@ class BackupCronTest {
             tmp,
             "zstd_stub",
             // Args from BackupCron: -q -o <path> -. We consume stdin and write to the -o arg.
-            ZSTD_STUB_BODY,
+            zstdStubBody,
         )
         val rcloneStub = writeExec(tmp, "rclone_stub", "exit 0")
 
@@ -133,7 +133,7 @@ class BackupCronTest {
         val db = freshDb()
         val tmp = Files.createTempDirectory("backup-cron-fail-").toFile()
         val pgDumpStub = writeExec(tmp, "pg_dump_stub", "printf 'X'")
-        val zstdStub = writeExec(tmp, "zstd_stub", ZSTD_STUB_BODY)
+        val zstdStub = writeExec(tmp, "zstd_stub", zstdStubBody)
         val rcloneStub = writeExec(tmp, "rclone_stub", "exit 7")
 
         val cron = BackupCron(

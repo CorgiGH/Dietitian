@@ -14,16 +14,16 @@ import com.dietician.server.db.DatabaseFactory
 import com.dietician.server.middleware.RateLimiter
 import com.dietician.server.observability.Metrics
 import com.dietician.server.repo.AuditRepository
-import com.dietician.server.repo.HealthRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import com.dietician.server.repo.BudgetRepository
 import com.dietician.server.repo.ConsentRepository
 import com.dietician.server.repo.CredentialRepository
 import com.dietician.server.repo.EventRepository
+import com.dietician.server.repo.HealthRepository
 import com.dietician.server.repo.PaperFetchQueueRepository
 import com.dietician.server.repo.SubjectRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.dsl.module
 
 /**

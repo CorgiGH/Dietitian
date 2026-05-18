@@ -83,7 +83,9 @@ class CronBootstrap(
                 try {
                     work()
                     Counters.cronCompletedTotal(name).increment()
-                } catch (e: Exception) {
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    // A bad cron must NOT kill the loop. Failure is recorded
+                    // on the failure counter + journalctl; next-fire reschedules.
                     log.error("Cron '{}' failed", name, e)
                     Counters.cronFailedTotal(name).increment()
                 }

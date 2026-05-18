@@ -1,3 +1,6 @@
+// DiagResponse is a wire DTO; the file's purpose is installHealthRoutes()
+@file:Suppress("MatchingDeclarationName")
+
 package com.dietician.server.routes
 
 import com.dietician.server.auth.AuthService
@@ -37,6 +40,7 @@ import java.util.UUID
  * for an n=1 system, but defaults are tight.
  */
 @Serializable
+@Suppress("ConstructorParameterNaming") // snake_case wire contract per RC13
 data class DiagResponse(
     val schema_version: String,
     val audit_log_count_last_24h: Int,
@@ -78,7 +82,10 @@ fun Application.installHealthRoutes() {
             val audit24h = db.withSystemContext { conn ->
                 conn.createStatement().executeQuery(
                     "SELECT count(*) FROM audit_log WHERE occurred_at >= NOW() - INTERVAL '24 hours'",
-                ).use { rs -> rs.next(); rs.getInt(1) }
+                ).use { rs ->
+                    rs.next()
+                    rs.getInt(1)
+                }
             }
             val schemaVersion = db.withSystemContext { conn ->
                 conn.createStatement().executeQuery(
@@ -105,6 +112,5 @@ fun Application.installHealthRoutes() {
                 ),
             )
         }
-
     }
 }

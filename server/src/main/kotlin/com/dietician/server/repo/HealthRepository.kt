@@ -29,6 +29,7 @@ import kotlinx.serialization.Serializable
  *     real gauge. -1 = "see Prometheus, not /health".
  */
 @Serializable
+@Suppress("ConstructorParameterNaming") // snake_case wire contract per RC13
 data class HealthResponse(
     val status: String,
     val tombstone_grace_stale_count: Int,
@@ -54,28 +55,46 @@ class HealthRepository(private val db: DatabaseFactory) {
     fun aggregate(): HealthResponse = db.withSystemContext { conn ->
         val tombstoneStale = conn.createStatement().executeQuery(
             "SELECT count(*) FROM tombstone_events WHERE redacted_at < NOW() - INTERVAL '7 days'",
-        ).use { rs -> rs.next(); rs.getInt(1) }
+        ).use { rs ->
+            rs.next()
+            rs.getInt(1)
+        }
         val lastPrune = conn.prepareStatement(
             "SELECT MAX(occurred_at) FROM audit_log WHERE kind = ?",
         ).use { ps ->
             ps.setString(1, AuditLogActions.AUDIT_PRUNE_COMPLETED)
-            ps.executeQuery().use { rs -> rs.next(); rs.getTimestamp(1)?.toInstant()?.toString() }
+            ps.executeQuery().use { rs ->
+                rs.next()
+                rs.getTimestamp(1)?.toInstant()?.toString()
+            }
         }
         val lastBackup = conn.prepareStatement(
             "SELECT MAX(occurred_at) FROM audit_log WHERE kind = ?",
         ).use { ps ->
             ps.setString(1, AuditLogActions.BACKUP_COMPLETED)
-            ps.executeQuery().use { rs -> rs.next(); rs.getTimestamp(1)?.toInstant()?.toString() }
+            ps.executeQuery().use { rs ->
+                rs.next()
+                rs.getTimestamp(1)?.toInstant()?.toString()
+            }
         }
         val embedVer = conn.createStatement().executeQuery(
             "SELECT MAX(embedding_provider_version) FROM corpus_embeddings",
-        ).use { rs -> rs.next(); rs.getString(1) }
+        ).use { rs ->
+            rs.next()
+            rs.getString(1)
+        }
         val paperQ = conn.createStatement().executeQuery(
             "SELECT count(*) FROM paper_fetch_queue WHERE status = 'queued'",
-        ).use { rs -> rs.next(); rs.getInt(1) }
+        ).use { rs ->
+            rs.next()
+            rs.getInt(1)
+        }
         val piiQ = conn.createStatement().executeQuery(
             "SELECT count(*) FROM pii_review_queue WHERE reviewed_at IS NULL",
-        ).use { rs -> rs.next(); rs.getInt(1) }
+        ).use { rs ->
+            rs.next()
+            rs.getInt(1)
+        }
 
         HealthResponse(
             status = "ok",

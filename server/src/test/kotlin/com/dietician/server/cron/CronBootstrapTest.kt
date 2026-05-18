@@ -3,7 +3,6 @@ package com.dietician.server.cron
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -29,9 +28,10 @@ class CronBootstrapTest {
     fun `scheduled job fires repeatedly`() = runBlocking {
         val counter = AtomicInteger(0)
         val cron = CronBootstrap(scope(), Clock.systemUTC(), SimpleMeterRegistry())
+        // 50 ms cadence keeps the test in the ~150 ms range
         cron.schedule(
             name = "tick",
-            fireAt = { now -> now.plusNanos(50_000_000) }, // 50 ms
+            fireAt = { now -> now.plusNanos(50_000_000) },
         ) {
             counter.incrementAndGet()
         }
@@ -54,7 +54,7 @@ class CronBootstrapTest {
             fireAt = { now -> now.plusNanos(40_000_000) },
         ) {
             val n = attempts.incrementAndGet()
-            if (n == 1) throw RuntimeException("simulated failure")
+            if (n == 1) error("simulated failure")
         }
         try {
             withTimeout(2_000) {

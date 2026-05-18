@@ -35,6 +35,7 @@ import java.time.LocalDate
  *     lookup). Tests override with a stub script that fakes success / failure.
  *   - [dumpDir] is `/tmp` by default; tests can pass an in-temp-dir path.
  */
+@Suppress("LongParameterList") // Test injection (pg/zstd/rclone stubs + dumpDir + today clock)
 class BackupCron(
     private val pgHost: String,
     private val pgUser: String,
@@ -71,7 +72,10 @@ class BackupCron(
                 pgDump.inputStream.use { src ->
                     zstd.outputStream.use { dst -> src.copyTo(dst) }
                 }
-            }.apply { isDaemon = true; start() }
+            }.apply {
+                isDaemon = true
+                start()
+            }
 
             val pgExit = pgDump.waitFor()
             pipe.join()
@@ -100,7 +104,9 @@ class BackupCron(
                 ),
             )
             return sizeBytes
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            // Any failure (process exit, IO, IllegalArgumentException from
+            // require()) must emit a BACKUP_FAILED audit row before rethrow.
             log.error("backup failed", e)
             auditLog.write(
                 subjectId = null,
