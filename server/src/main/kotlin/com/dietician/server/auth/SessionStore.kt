@@ -90,4 +90,20 @@ class SessionStore(
         sessions.entries.removeIf { now.isAfter(it.value.expiresAt) }
         return sessions.size
     }
+
+    /**
+     * Returns all active (non-expired) sessions for [subjectId]. Used by
+     * `GET /me/sessions` (RC8 paired surface with `/auth/sign-out-all-sessions`)
+     * to render the per-subject session table. Order is undefined.
+     *
+     * Session ids ARE included in the returned shape. The endpoint that
+     * serializes them gates them behind authentication, so the disclosure is
+     * to the session-owner only. (Don't widen the surface to admin-style
+     * cross-subject listing without revisiting that decision.)
+     */
+    fun listForSubject(subjectId: UUID): List<Session> {
+        val now = clock.instant()
+        sessions.entries.removeIf { now.isAfter(it.value.expiresAt) }
+        return sessions.values.filter { it.subjectId == subjectId }
+    }
 }

@@ -4,6 +4,7 @@ import com.dietician.server.di.dieticianModule
 import com.dietician.server.observability.installObservability
 import com.dietician.server.routes.installAuthRoutes
 import com.dietician.server.routes.installEmbedRoutes
+import com.dietician.server.routes.installMeRoutes
 import com.dietician.server.routes.installReceiptsRoutes
 import com.dietician.server.routes.installSyncRoutes
 import com.dietician.shared.Dietician
@@ -104,4 +105,5 @@ fun Application.module() {
     installSyncRoutes()
     installReceiptsRoutes()
     installEmbedRoutes()
+    installMeRoutes()
 }
