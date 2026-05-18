@@ -1,10 +1,15 @@
 package com.dietician.server
 
+import com.dietician.server.cron.AuditPruneCron
+import com.dietician.server.cron.BackupCron
+import com.dietician.server.cron.CronBootstrap
+import com.dietician.server.cron.nextDayAtTime
 import com.dietician.server.di.dieticianModule
 import com.dietician.server.observability.installObservability
 import com.dietician.server.routes.installAuditExportRoutes
 import com.dietician.server.routes.installAuthRoutes
 import com.dietician.server.routes.installEmbedRoutes
+import com.dietician.server.routes.installHealthRoutes
 import com.dietician.server.routes.installMeRoutes
 import com.dietician.server.routes.installReceiptsRoutes
 import com.dietician.server.routes.installRedactRoutes
@@ -23,6 +28,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import kotlinx.serialization.json.Json
+import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
@@ -110,4 +116,17 @@ fun Application.module() {
     installMeRoutes()
     installRedactRoutes()
     installAuditExportRoutes()
+    installHealthRoutes()
+
+    // [Plan-3 Task 33+35 + Council 1779120000 RC4] In-JVM cron scheduling.
+    // Disable knob: `DIETICIAN_DISABLE_INJVM_CRONS=true` (see
+    // docs/runbooks/cron-systemd-fallback.md) — leaves the scheduler dormant
+    // so the operator can hand over to systemd `.timer` units without dupes.
+    if (System.getenv("DIETICIAN_DISABLE_INJVM_CRONS") != "true") {
+        val cron: CronBootstrap by inject()
+        val prune: AuditPruneCron by inject()
+        val backup: BackupCron by inject()
+        cron.schedule("audit-prune", { it.nextDayAtTime(4, 0) }) { prune.run() }
+        cron.schedule("backup", { it.nextDayAtTime(4, 30) }) { backup.run() }
+    }
 }

@@ -7,9 +7,17 @@ import com.dietician.server.auth.MagicLinkService
 import com.dietician.server.auth.NoopEmailSender
 import com.dietician.server.auth.ResendClient
 import com.dietician.server.auth.SessionStore
+import com.dietician.server.cron.AuditPruneCron
+import com.dietician.server.cron.BackupCron
+import com.dietician.server.cron.CronBootstrap
 import com.dietician.server.db.DatabaseFactory
 import com.dietician.server.middleware.RateLimiter
+import com.dietician.server.observability.Metrics
 import com.dietician.server.repo.AuditRepository
+import com.dietician.server.repo.HealthRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import com.dietician.server.repo.BudgetRepository
 import com.dietician.server.repo.ConsentRepository
 import com.dietician.server.repo.CredentialRepository
@@ -44,9 +52,24 @@ val dieticianModule = module {
     single { PaperFetchQueueRepository(get()) }
     single { BudgetRepository(get()) }
     single { AuditRepository(get()) }
+    single { HealthRepository(get()) }
 
     // ----- audit -----
     single { AuditLogWriter(get()) }
+
+    // ----- cron (Plan-3 Task 33/35; in-JVM scheduler per RC4) -----
+    single { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+    single { CronBootstrap(get(), registry = Metrics.registry) }
+    single { AuditPruneCron(get(), get()) }
+    single {
+        BackupCron(
+            pgHost = System.getenv("DIETICIAN_DB_HOST") ?: "127.0.0.1",
+            pgUser = System.getenv("DIETICIAN_DB_USER") ?: "dietician_app",
+            pgDb = System.getenv("DIETICIAN_DB_NAME") ?: "dietician",
+            rcloneRemote = System.getenv("DIETICIAN_BACKUP_REMOTE") ?: "onedrive-crypt:dietician-backups",
+            auditLog = get(),
+        )
+    }
 
     // ----- auth -----
     single { MagicLinkService() }
