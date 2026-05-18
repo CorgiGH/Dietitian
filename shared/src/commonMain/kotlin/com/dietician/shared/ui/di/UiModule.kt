@@ -1,39 +1,85 @@
 package com.dietician.shared.ui.di
 
+import com.dietician.shared.llm.AuditEntry
+import com.dietician.shared.llm.AuditLogSink
+import com.dietician.shared.llm.LlmChunk
+import com.dietician.shared.llm.LlmRequest
+import com.dietician.shared.llm.LlmStream
 import com.dietician.shared.ui.components.PlannedCutController
 import com.dietician.shared.ui.components.TodayNutrientsState
+import com.dietician.shared.ui.data.PantryItem
+import com.dietician.shared.ui.data.PantryReader
+import com.dietician.shared.ui.data.PantryWriter
+import com.dietician.shared.ui.data.Recipe
+import com.dietician.shared.ui.data.RecipeReader
+import com.dietician.shared.ui.data.saveExportedFile
+import com.dietician.shared.ui.screens.AuditLogViewModel
+import com.dietician.shared.ui.screens.CoachChatViewModel
+import com.dietician.shared.ui.screens.CookbookViewModel
+import com.dietician.shared.ui.screens.FoodLogViewModel
 import com.dietician.shared.ui.screens.HomeLoader
 import com.dietician.shared.ui.screens.HomeViewModel
 import com.dietician.shared.ui.screens.MeProfile
+import com.dietician.shared.ui.screens.PantryViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
 /**
  * Shared `uiModule` registering ViewModels + the data interfaces they consume.
  *
- * **Scope (nav-mount-fix iteration 1):** only Home is wired to a real screen via
- * Koin. Other tabs still render `PlaceholderScreen("...")` in [Routes.kt] until
- * follow-up iterations land their stubs / impls. This is on purpose: every
- * tab gets a smoke-walk-verified mount before adding the next, so we don't
- * repeat the 2026-05-11 Slice 1 ghost-component pattern at scale.
+ * **Iteration 2 scope:** mounts FoodLog + Pantry + CoachChat + AuditLog real
+ * screens on top of iteration 1 (Home). Cookbook + Settings stay placeholder
+ * in `Routes.kt` until later iterations (Settings has no `SettingsScreen.kt`
+ * yet; Cookbook isn't a bottom-nav tab in spec). Stubs return deterministic
+ * empty/placeholder data so the screens paint their real empty-states instead
+ * of crashing on a missing dep.
  *
- * [StubHomeLoader] returns hardcoded subject info + an empty
- * [TodayNutrientsState] so HomeScreen paints the user-facing empty state
- * ("Building your estimate" / neutral nutrient chips) instead of crashing on
- * a missing dependency. Real impl lands when Plan-3 `/me` adapter +
- * Plan-1 `MealEventStore.todayNutrients` query are wired.
+ * Wiring map per VM:
+ *   - [HomeViewModel] ← [StubHomeLoader]
+ *   - [FoodLogViewModel] ← default `coachDisabledProvider = { false }`
+ *   - [PantryViewModel] ← [StubPantryReader]
+ *   - [CookbookViewModel] ← [StubRecipeReader] + `RecipeIngestClient` from
+ *     `networkModule`
+ *   - [CoachChatViewModel] ← [StubLlmStream] + [StubAuditLogSink] +
+ *     hardcoded subjectId placeholder
+ *   - [AuditLogViewModel] ← real `AuditRepository` from `networkModule` +
+ *     `saveExportedFile` expect/actual top-level fun
+ *
+ * Replacements that land in later batches:
+ *   - StubHomeLoader → HTTP `/me` adapter + Plan-1 `MealEventStore.todayNutrients`
+ *   - StubPantryReader → Plan-1 `PantrySnapshotStore.flowSnapshot`
+ *   - StubLlmStream → Plan-2 `LlmRouterStream`
+ *   - StubAuditLogSink → `AuditLogWriter` (Plan-3 audit_log table writer)
+ *   - StubRecipeReader → Plan-1 `RecipeStore.all` / Plan-7 corpus reader
  */
 val uiModule: Module = module {
+    // Stubs — replaced by real impls in future iterations / Plan-1/2/3 wires.
     single<HomeLoader> { StubHomeLoader() }
+    single<PantryReader> { StubPantryReader() }
+    single<PantryWriter> { StubPantryWriter() }
+    single<LlmStream> { StubLlmStream() }
+    single<AuditLogSink> { StubAuditLogSink() }
+    single<RecipeReader> { StubRecipeReader() }
+
+    // ViewModels.
     factory { HomeViewModel(loader = get(), plannedCutController = PlannedCutController()) }
+    factory { FoodLogViewModel() }
+    factory { PantryViewModel(reader = get(), writer = get()) }
+    factory { CookbookViewModel(reader = get(), ingest = get()) }
+    factory {
+        CoachChatViewModel(
+            stream = get(),
+            audit = get(),
+            subjectIdProvider = { "stub-subject-0000" },
+        )
+    }
+    factory { AuditLogViewModel(repo = get(), saveFile = ::saveExportedFile) }
 }
 
-/**
- * Smoke-walk stub for [HomeLoader]. Returns deterministic placeholder data
- * so HomeScreen renders its real composables without needing the Plan-1
- * MealEventStore or Plan-3 `/me` endpoint live. Replace with the HTTP +
- * ledger-backed impl when those wires arrive.
- */
+/* ---------- Stubs ---------- */
+
 private class StubHomeLoader : HomeLoader {
     override suspend fun loadMe(): MeProfile = MeProfile(
         subjectId = "stub-subject-0000",
@@ -42,4 +88,39 @@ private class StubHomeLoader : HomeLoader {
 
     override suspend fun loadTodayNutrients(subjectId: String): TodayNutrientsState =
         TodayNutrientsState()
+}
+
+private class StubPantryReader : PantryReader {
+    override fun flowSnapshot(): Flow<List<PantryItem>> = flowOf(emptyList())
+}
+
+private class StubPantryWriter : PantryWriter {
+    override fun addItem(item: PantryItem) {
+        // no-op — real writer enqueues a pantry_event row via Plan-1 EventStore
+    }
+
+    override fun removeItem(sku: String, qty: Double, unit: String) {
+        // no-op — see addItem
+    }
+}
+
+private class StubLlmStream : LlmStream {
+    override fun streamRoute(request: LlmRequest): Flow<LlmChunk> = flowOf(
+        LlmChunk(
+            text = "AI coach offline — Plan-2 router not wired into UI yet.",
+            tokenCount = 0,
+            isDone = true,
+            finalResponse = null,
+        ),
+    )
+}
+
+private class StubAuditLogSink : AuditLogSink {
+    override suspend fun write(entry: AuditEntry) {
+        // no-op — real AuditLogWriter ships when Plan-3 audit_log writer is bound
+    }
+}
+
+private class StubRecipeReader : RecipeReader {
+    override suspend fun all(): List<Recipe> = emptyList()
 }
