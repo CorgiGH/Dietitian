@@ -64,6 +64,11 @@ fun FoodLogScreen(
             }
         }
         BarcodeScanButton(onTap = onBarcodeScan)
+        if (state.barcodeToastVisible) {
+            Card(modifier = Modifier.padding(8.dp).testTag("foodlog-barcode-coming-soon-toast")) {
+                Text(text = s.foodlog_barcode_coming_soon, modifier = Modifier.padding(12.dp))
+            }
+        }
         PhotoCaptureButton(onTap = onPhotoCapture)
         if (state.coachDisabled) {
             // RC9 — surfaces that would AI-suggest show the notice when coach disabled.
@@ -72,6 +77,14 @@ fun FoodLogScreen(
             }
         }
         SameAsRecentButton(onTap = onSameAsRecent)
+        if (state.sameAsSheetVisible) {
+            Card(modifier = Modifier.padding(8.dp).testTag("foodlog-same-as-recent-sheet")) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(text = s.foodlog_same_as_recent_empty_title)
+                    Text(text = s.foodlog_same_as_recent_empty_body)
+                }
+            }
+        }
         ManualEntryField(
             query = state.manualQuery,
             onQueryChange = viewModel::onManualQueryChange,

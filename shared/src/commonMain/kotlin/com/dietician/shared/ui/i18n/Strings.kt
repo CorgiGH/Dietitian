@@ -99,6 +99,11 @@ interface Strings {
     val foodlog_photo_button: String
     val foodlog_same_as_recent_button: String
 
+    // --- FoodLog iter-4 sub-buttons (barcode toast + same-as-recent sheet) ---
+    val foodlog_barcode_coming_soon: String
+    val foodlog_same_as_recent_empty_title: String
+    val foodlog_same_as_recent_empty_body: String
+
     // --- Pantry + Coach + PlannedCut + AILiteracy (iter 3 follow-up batch 2) ---
     val pantry_empty_state: String
     val pantry_add_manually_fab: String
@@ -227,6 +232,12 @@ object Strings_en : Strings {
     override val foodlog_photo_button: String = "Photo of meal"
     override val foodlog_same_as_recent_button: String = "Same as recent"
 
+    override val foodlog_barcode_coming_soon: String =
+        "Barcode scan ships with Plan-6 — type the food manually below."
+    override val foodlog_same_as_recent_empty_title: String = "No recent meals yet"
+    override val foodlog_same_as_recent_empty_body: String =
+        "Log a few meals first — they'll appear here for one-tap re-log."
+
     override val pantry_empty_state: String = "Pantry is empty — tap + to add an item"
     override val pantry_add_manually_fab: String = "+ Add manually"
     override val planned_cut_days_remaining_suffix: String = "days remaining"
@@ -350,6 +361,12 @@ object Strings_ro : Strings {
     override val foodlog_barcode_button: String = "Scanează cod de bare"
     override val foodlog_photo_button: String = "Fotografie masă"
     override val foodlog_same_as_recent_button: String = "La fel ca recent"
+
+    override val foodlog_barcode_coming_soon: String =
+        "Scanarea codurilor vine cu Plan-6 — scrie mâncarea manual mai jos."
+    override val foodlog_same_as_recent_empty_title: String = "Nicio masă recentă"
+    override val foodlog_same_as_recent_empty_body: String =
+        "Înregistrează câteva mese — vor apărea aici pentru re-logare rapidă."
 
     override val pantry_empty_state: String = "Cămara e goală — apasă + pentru a adăuga"
     override val pantry_add_manually_fab: String = "+ Adaugă manual"

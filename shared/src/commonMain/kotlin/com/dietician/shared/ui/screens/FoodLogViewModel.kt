@@ -49,6 +49,15 @@ class FoodLogViewModel(
         _state.value = _state.value.copy(sameAsSheetVisible = false)
     }
 
+    fun onBarcodeTap() {
+        // Barcode scanner ships with Plan-6 — toast fallback for now (mirrors RC1 voice pattern).
+        _state.value = _state.value.copy(barcodeToastVisible = true)
+    }
+
+    fun clearBarcodeToast() {
+        _state.value = _state.value.copy(barcodeToastVisible = false)
+    }
+
     companion object {
         const val TOAST_DURATION_MS: Long = 4_000L
     }
@@ -59,4 +68,5 @@ data class FoodLogState(
     val voiceToastVisible: Boolean = false,
     val manualQuery: String = "",
     val sameAsSheetVisible: Boolean = false,
+    val barcodeToastVisible: Boolean = false,
 )
