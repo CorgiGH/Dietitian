@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.data.PaperResult
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Search-result row card. Title + abstract snippet + score + "Open detail"
@@ -26,6 +27,7 @@ fun PaperResultCard(
     index: Int,
     onOpenDetail: (String) -> Unit,
 ) {
+    val s = strings()
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -51,7 +53,7 @@ fun PaperResultCard(
                     style = MaterialTheme.typography.labelSmall,
                 )
                 TextButton(onClick = { onOpenDetail(result.id) }) {
-                    Text("Open detail")
+                    Text(s.paper_result_open_detail_button)
                 }
             }
         }

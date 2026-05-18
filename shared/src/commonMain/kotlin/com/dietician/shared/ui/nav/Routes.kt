@@ -13,12 +13,16 @@ import com.dietician.shared.ui.screens.AuditLogScreen
 import com.dietician.shared.ui.screens.AuditLogViewModel
 import com.dietician.shared.ui.screens.CoachChatScreen
 import com.dietician.shared.ui.screens.CoachChatViewModel
+import com.dietician.shared.ui.screens.CookbookScreen
+import com.dietician.shared.ui.screens.CookbookViewModel
 import com.dietician.shared.ui.screens.FoodLogScreen
 import com.dietician.shared.ui.screens.FoodLogViewModel
 import com.dietician.shared.ui.screens.HomeScreen
 import com.dietician.shared.ui.screens.HomeViewModel
 import com.dietician.shared.ui.screens.PantryScreen
 import com.dietician.shared.ui.screens.PantryViewModel
+import com.dietician.shared.ui.screens.PaperSearchScreen
+import com.dietician.shared.ui.screens.PaperSearchViewModel
 import com.dietician.shared.ui.screens.ReceiptUploadScreen
 import com.dietician.shared.ui.screens.ReceiptUploadViewModel
 import com.dietician.shared.ui.screens.SettingsScreen
@@ -83,7 +87,11 @@ sealed class DieticianScreen : Screen {
         @Composable
         override fun Content() {
             val viewModel = koinInject<PantryViewModel>()
-            PantryScreen(viewModel = viewModel)
+            val navigator = LocalNavigator.currentOrThrow
+            PantryScreen(
+                viewModel = viewModel,
+                onOpenCookbook = { navigator.push(Cookbook) },
+            )
         }
     }
 
@@ -92,7 +100,18 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Cookbook", key)
+            val viewModel = koinInject<CookbookViewModel>()
+            CookbookScreen(viewModel = viewModel)
+        }
+    }
+
+    data object PaperSearch : DieticianScreen() {
+        override val key: ScreenKey = "paper-search"
+
+        @Composable
+        override fun Content() {
+            val viewModel = koinInject<PaperSearchViewModel>()
+            PaperSearchScreen(viewModel = viewModel)
         }
     }
 
@@ -121,6 +140,7 @@ sealed class DieticianScreen : Screen {
             SettingsScreen(
                 viewModel = viewModel,
                 onOpenAuditLog = { navigator.push(AuditLog) },
+                onOpenPaperSearch = { navigator.push(PaperSearch) },
             )
         }
     }

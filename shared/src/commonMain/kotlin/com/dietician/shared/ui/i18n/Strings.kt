@@ -104,6 +104,35 @@ interface Strings {
     val foodlog_same_as_recent_empty_title: String
     val foodlog_same_as_recent_empty_body: String
 
+    // --- Iter-5 i18n batch: Onboarding / MagicLinkVerify / Cookbook / PaperSearch / misc ---
+    val onboarding_sign_in_title: String
+    val onboarding_email_label: String
+    val onboarding_send_magic_link_button: String
+    val onboarding_check_email_title: String
+    val onboarding_same_device_copy: String
+    val onboarding_resend_link_button: String
+    val onboarding_success_label: String
+    val magic_link_verifying: String
+    val magic_link_success: String
+    val magic_link_back_to_sign_in: String
+    val cookbook_search_label: String
+    val cookbook_empty_state: String
+    val cookbook_ingest_dialog_title: String
+    val cookbook_ingest_submit_button: String
+    val cookbook_ingest_cancel_button: String
+    val cookbook_ingest_url_placeholder: String
+    val cookbook_ingest_from_url_button: String
+    val paper_search_label: String
+    val paper_search_submit_button: String
+    val paper_search_no_matches_title: String
+    val paper_search_broader_query_body: String
+    val paper_search_not_implemented: String
+    val paper_result_open_detail_button: String
+    val per_call_open_audit_row_button: String
+    val tailscale_retry_button: String
+    val settings_view_cookbook_button: String
+    val settings_search_papers_button: String
+
     // --- ReceiptUpload screen (iter-4 i18n batch) ---
     val receipt_take_photo_button: String
     val receipt_uploading_label: String
@@ -249,6 +278,36 @@ object Strings_en : Strings {
     override val foodlog_same_as_recent_empty_body: String =
         "Log a few meals first — they'll appear here for one-tap re-log."
 
+    override val onboarding_sign_in_title: String = "Sign in with magic link"
+    override val onboarding_email_label: String = "Email"
+    override val onboarding_send_magic_link_button: String = "Send magic link"
+    override val onboarding_check_email_title: String = "Check your email"
+    override val onboarding_same_device_copy: String =
+        "Open the magic link on the SAME device where you started."
+    override val onboarding_resend_link_button: String = "Resend link"
+    override val onboarding_success_label: String = "Signed in."
+    override val magic_link_verifying: String = "Verifying your magic link…"
+    override val magic_link_success: String = "Signed in — taking you home."
+    override val magic_link_back_to_sign_in: String = "Back to sign-in"
+    override val cookbook_search_label: String = "Search recipes"
+    override val cookbook_empty_state: String = "No recipes yet — ingest your first"
+    override val cookbook_ingest_dialog_title: String = "Ingest recipe from URL"
+    override val cookbook_ingest_submit_button: String = "Submit"
+    override val cookbook_ingest_cancel_button: String = "Cancel"
+    override val cookbook_ingest_url_placeholder: String = "https://..."
+    override val cookbook_ingest_from_url_button: String = "Ingest from URL"
+    override val paper_search_label: String = "Search papers + corpora"
+    override val paper_search_submit_button: String = "Search"
+    override val paper_search_no_matches_title: String = "No matches"
+    override val paper_search_broader_query_body: String = "Try a broader query"
+    override val paper_search_not_implemented: String =
+        "Search coming soon, embedding service is still ramping"
+    override val paper_result_open_detail_button: String = "Open detail"
+    override val per_call_open_audit_row_button: String = "Open audit row"
+    override val tailscale_retry_button: String = "Retry"
+    override val settings_view_cookbook_button: String = "Cookbook"
+    override val settings_search_papers_button: String = "Search papers"
+
     override val receipt_take_photo_button: String = "Take photo / pick file"
     override val receipt_uploading_label: String = "Uploading..."
     override val receipt_uploaded_title: String = "Receipt uploaded"
@@ -388,6 +447,36 @@ object Strings_ro : Strings {
     override val foodlog_same_as_recent_empty_title: String = "Nicio masă recentă"
     override val foodlog_same_as_recent_empty_body: String =
         "Înregistrează câteva mese — vor apărea aici pentru re-logare rapidă."
+
+    override val onboarding_sign_in_title: String = "Conectare cu link magic"
+    override val onboarding_email_label: String = "Email"
+    override val onboarding_send_magic_link_button: String = "Trimite link magic"
+    override val onboarding_check_email_title: String = "Verifică-ți emailul"
+    override val onboarding_same_device_copy: String =
+        "Deschide link-ul magic pe ACELAȘI dispozitiv de unde ai pornit."
+    override val onboarding_resend_link_button: String = "Retrimite link"
+    override val onboarding_success_label: String = "Conectat."
+    override val magic_link_verifying: String = "Se verifică link-ul magic…"
+    override val magic_link_success: String = "Conectat — te ducem acasă."
+    override val magic_link_back_to_sign_in: String = "Înapoi la conectare"
+    override val cookbook_search_label: String = "Caută rețete"
+    override val cookbook_empty_state: String = "Nicio rețetă încă — adaugă prima"
+    override val cookbook_ingest_dialog_title: String = "Adaugă rețetă din URL"
+    override val cookbook_ingest_submit_button: String = "Trimite"
+    override val cookbook_ingest_cancel_button: String = "Anulează"
+    override val cookbook_ingest_url_placeholder: String = "https://..."
+    override val cookbook_ingest_from_url_button: String = "Adaugă din URL"
+    override val paper_search_label: String = "Caută articole + corpus"
+    override val paper_search_submit_button: String = "Caută"
+    override val paper_search_no_matches_title: String = "Nicio potrivire"
+    override val paper_search_broader_query_body: String = "Încearcă o interogare mai largă"
+    override val paper_search_not_implemented: String =
+        "Căutarea vine curând, serviciul de embedding încă se pregătește"
+    override val paper_result_open_detail_button: String = "Deschide detalii"
+    override val per_call_open_audit_row_button: String = "Deschide rândul de audit"
+    override val tailscale_retry_button: String = "Reîncearcă"
+    override val settings_view_cookbook_button: String = "Carte de bucate"
+    override val settings_search_papers_button: String = "Caută articole"
 
     override val receipt_take_photo_button: String = "Fă o poză / alege fișier"
     override val receipt_uploading_label: String = "Se încarcă..."

@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.components.IngestUrlButton
 import com.dietician.shared.ui.components.RecipeCard
+import com.dietician.shared.ui.i18n.strings
 import kotlinx.coroutines.launch
 
 /**
@@ -50,6 +51,7 @@ fun CookbookScreen(
     onRecipeTap: (String) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
+    val s = strings()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(Unit) { viewModel.load() }
@@ -77,7 +79,7 @@ fun CookbookScreen(
                 modifier = Modifier
                     .weight(1f)
                     .testTag("cookbook-search"),
-                label = { Text("Search recipes") },
+                label = { Text(s.cookbook_search_label) },
                 singleLine = true,
             )
             IngestUrlButton(onClick = viewModel::showIngestDialog)
@@ -90,7 +92,7 @@ fun CookbookScreen(
                     .testTag("cookbook-empty-state"),
             ) {
                 Text(
-                    text = "no recipes yet — ingest your first",
+                    text = s.cookbook_empty_state,
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -117,7 +119,7 @@ fun CookbookScreen(
     if (state.ingestDialogVisible) {
         AlertDialog(
             onDismissRequest = viewModel::hideIngestDialog,
-            title = { Text("Ingest recipe from URL") },
+            title = { Text(s.cookbook_ingest_dialog_title) },
             text = {
                 OutlinedTextField(
                     value = state.ingestUrl,
@@ -125,7 +127,7 @@ fun CookbookScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("cookbook-ingest-url-input"),
-                    label = { Text("https://...") },
+                    label = { Text(s.cookbook_ingest_url_placeholder) },
                     singleLine = true,
                 )
             },
@@ -133,10 +135,12 @@ fun CookbookScreen(
                 TextButton(
                     onClick = { coroutineScope.launch { viewModel.submitIngest() } },
                     modifier = Modifier.testTag("cookbook-ingest-submit"),
-                ) { Text("Submit") }
+                ) { Text(s.cookbook_ingest_submit_button) }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::hideIngestDialog) { Text("Cancel") }
+                TextButton(onClick = viewModel::hideIngestDialog) {
+                    Text(s.cookbook_ingest_cancel_button)
+                }
             },
         )
     }

@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Shown after the user taps a magic-link deep-link
@@ -32,6 +33,7 @@ fun MagicLinkVerifyScreen(
     state: VerifyUiState,
     onBackToOnboarding: () -> Unit,
 ) {
+    val s = strings()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -44,12 +46,12 @@ fun MagicLinkVerifyScreen(
                 CircularProgressIndicator(
                     modifier = Modifier.testTag("magic-link-verify-loading"),
                 )
-                Text("Verifying your magic link…")
+                Text(s.magic_link_verifying)
             }
 
             VerifyUiState.Success -> {
                 Text(
-                    text = "Signed in — taking you home.",
+                    text = s.magic_link_success,
                     modifier = Modifier.testTag("magic-link-verify-success"),
                 )
             }
@@ -63,7 +65,7 @@ fun MagicLinkVerifyScreen(
                     onClick = onBackToOnboarding,
                     modifier = Modifier.testTag("magic-link-back-to-onboarding"),
                 ) {
-                    Text("Back to sign-in")
+                    Text(s.magic_link_back_to_sign_in)
                 }
             }
         }
