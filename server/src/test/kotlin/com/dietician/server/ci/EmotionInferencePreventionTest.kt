@@ -51,6 +51,10 @@ class EmotionInferencePreventionTest {
         // catches it BEFORE the file lands.
         "AuditLogActions.kt",
         "AuditLogWriter.kt",
+        // Plan-3 Task 31 audit-export PDF renderer: KDoc explicitly states
+        // the PDF has NO emotion-inferring column (Art 5(1)(f) compliance
+        // statement, same pattern as AuditLogActions.kt above).
+        "AuditPdfRenderer.kt",
     )
 
     @Test
