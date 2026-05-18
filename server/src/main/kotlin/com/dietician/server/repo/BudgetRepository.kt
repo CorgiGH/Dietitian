@@ -50,6 +50,65 @@ class BudgetRepository(private val db: DatabaseFactory) {
         }
 
     /**
+     * Plan-2 Router two-phase finalize. Adjusts `llm_budget.cost_cents_used` by
+     * `actualCostCents - reservedCostCents` (positive = under-reserved, negative =
+     * over-reserved) and bumps `finalized_tokens` by [actualTokens].
+     *
+     * `cost_cents_used` is clamped at zero — never goes negative.
+     */
+    fun finalize(
+        subjectId: UUID,
+        provider: String,
+        actualTokens: Int,
+        costCentsDelta: Int,
+    ) {
+        db.withSubject(subjectId) { conn ->
+            conn.prepareStatement(
+                """
+                UPDATE llm_budget
+                SET cost_cents_used = GREATEST(0, cost_cents_used + ?),
+                    finalized_tokens = finalized_tokens + ?
+                WHERE subject_id = ? AND provider = ?
+                  AND period_starts_at = date_trunc('month', now())::DATE
+                """.trimIndent(),
+            ).use { ps ->
+                ps.setInt(1, costCentsDelta)
+                ps.setInt(2, actualTokens)
+                ps.setObject(3, subjectId)
+                ps.setString(4, provider)
+                ps.executeUpdate()
+            }
+        }
+    }
+
+    /**
+     * Plan-2 Router two-phase release. Reverses a prior [consumeOrFail] reservation —
+     * subtracts [reservedCostCents] back from `cost_cents_used` and removes the reserved
+     * token estimate.
+     *
+     * `cost_cents_used` + `reserved_tokens` are clamped at zero.
+     */
+    fun release(subjectId: UUID, provider: String, reservedTokens: Int, reservedCostCents: Int) {
+        db.withSubject(subjectId) { conn ->
+            conn.prepareStatement(
+                """
+                UPDATE llm_budget
+                SET cost_cents_used = GREATEST(0, cost_cents_used - ?),
+                    reserved_tokens = GREATEST(0, reserved_tokens - ?)
+                WHERE subject_id = ? AND provider = ?
+                  AND period_starts_at = date_trunc('month', now())::DATE
+                """.trimIndent(),
+            ).use { ps ->
+                ps.setInt(1, reservedCostCents)
+                ps.setInt(2, reservedTokens)
+                ps.setObject(3, subjectId)
+                ps.setString(4, provider)
+                ps.executeUpdate()
+            }
+        }
+    }
+
+    /**
      * Returns the trial-queries-remaining for [subjectId]'s current month +
      * [provider]. Computed as `cap - used` where NULL cap means unbounded.
      * Used by `/me` to render the BYOK widget. If no budget row exists yet

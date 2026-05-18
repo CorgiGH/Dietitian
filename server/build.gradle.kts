@@ -53,6 +53,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.slf4j)
 
+    // kotlinx-datetime (transitive via :shared LlmRouter Clock parameter — declared
+    // explicitly so the server compile classpath sees the Clock type).
+    implementation(libs.kotlinx.datetime)
+
     // Markdown + YAML (wiki I/O)
     implementation(libs.flexmark.all)
     implementation(libs.kaml)
