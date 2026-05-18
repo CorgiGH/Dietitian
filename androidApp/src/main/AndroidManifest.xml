@@ -23,6 +23,7 @@
       Android system default launcher icon.
     -->
     <application
+        android:name=".DieticianAndroidApplication"
         android:label="@string/app_name"
         android:theme="@style/Theme.Dietician">
 
