@@ -46,6 +46,15 @@ object ModelPriceLookup {
  * [computeCostCents] uses integer division (truncating) — this is intentional so that the
  * V019 `consume_or_fail` integer subtraction matches what the Router decides. Sub-cent
  * losses are accumulated into provider margin (acceptable; reviewed in monthly audit).
+ *
+ * Plan-2 Task 25/26: [computeCostCentsWithCache] applies Anthropic-style prompt caching
+ * discount. Anthropic's posted rates as of 2026-05:
+ *   - cache_read_input_tokens: 10% of base input rate (90% discount)
+ *   - cache_creation_input_tokens: 125% of base input rate (25% premium for the
+ *     creation hit). Net: a 5-prompt session in a cached window pays ~24% of the
+ *     non-cached cost.
+ * Non-cache providers pass 0 for both cached fields → math degrades to the legacy
+ * [computeCostCents].
  */
 data class Price(val inputPerMTok: Int, val outputPerMTok: Int) {
     fun computeCostCents(inputTokens: Int, outputTokens: Int): Int {
@@ -54,5 +63,33 @@ data class Price(val inputPerMTok: Int, val outputPerMTok: Int) {
         val inputCost = inputTokens.toLong() * inputPerMTok / 1_000_000L
         val outputCost = outputTokens.toLong() * outputPerMTok / 1_000_000L
         return (inputCost + outputCost).toInt()
+    }
+
+    /**
+     * Cost math with Anthropic prompt-cache rebate.
+     *
+     * @param uncachedInputTokens fresh (non-cached) input tokens billed at full rate.
+     * @param cacheReadTokens tokens served from the cache — 10% of full input rate.
+     * @param cacheWriteTokens tokens stored on this call (cache creation) — 125%
+     *     of full input rate.
+     * @param outputTokens completion tokens billed at full output rate.
+     */
+    fun computeCostCentsWithCache(
+        uncachedInputTokens: Int,
+        cacheReadTokens: Int,
+        cacheWriteTokens: Int,
+        outputTokens: Int,
+    ): Int {
+        require(uncachedInputTokens >= 0) { "uncachedInputTokens must be non-negative" }
+        require(cacheReadTokens >= 0) { "cacheReadTokens must be non-negative" }
+        require(cacheWriteTokens >= 0) { "cacheWriteTokens must be non-negative" }
+        require(outputTokens >= 0) { "outputTokens must be non-negative" }
+        val uncached = uncachedInputTokens.toLong() * inputPerMTok / 1_000_000L
+        // 10% of base input rate. Use *1 / 10 to keep integer math without rounding bias.
+        val cacheRead = cacheReadTokens.toLong() * inputPerMTok / 10L / 1_000_000L
+        // 125% of base input rate.
+        val cacheWrite = cacheWriteTokens.toLong() * inputPerMTok * 125L / 100L / 1_000_000L
+        val outputCost = outputTokens.toLong() * outputPerMTok / 1_000_000L
+        return (uncached + cacheRead + cacheWrite + outputCost).toInt()
     }
 }

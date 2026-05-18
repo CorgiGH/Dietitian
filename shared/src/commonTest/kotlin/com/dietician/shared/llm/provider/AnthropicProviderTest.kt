@@ -1,6 +1,7 @@
 package com.dietician.shared.llm.provider
 
 import com.dietician.shared.llm.AttachmentRef
+import com.dietician.shared.llm.CacheControl
 import com.dietician.shared.llm.Capability
 import com.dietician.shared.llm.DeviceClass
 import com.dietician.shared.llm.LlmAttachment
@@ -126,6 +127,96 @@ class AnthropicProviderTest {
         val resp = provider.call(req, "anthropic/claude-sonnet-4.5")
         resp.cacheReadTokens shouldBe 2
         resp.cacheWriteTokens shouldBe 3
+    }
+
+    // -------------------------------------------------------------------------
+    // Plan-2 Task 25 — prompt caching (cache_control: ephemeral)
+    // -------------------------------------------------------------------------
+
+    private fun longUserContent(): String =
+        // ~6000 chars / 4 ≈ 1500 tokens, comfortably above the 1024-token Sonnet
+        // minimum for prompt caching.
+        "Recipe analysis: " + "garbanzo bean tagine with preserved lemon, ".repeat(120)
+
+    @Test
+    fun `cache_control ephemeral stamped on system block when payload exceeds minimum`() = runTest {
+        var body = ""
+        val provider = AnthropicProvider(mockClient({ body = it }, okResponse), cfg)
+        val req = LlmRequest(
+            subjectId = "victor",
+            task = TaskType.TEXT,
+            deviceClass = DeviceClass.VICTOR_DESKTOP,
+            capability = Capability.NON_STREAMING,
+            messages = listOf(LlmMessage(Role.USER, longUserContent())),
+            systemPrompt = "you are a dietician " + "with deep knowledge of romanian cuisine ".repeat(50),
+            cacheControl = CacheControl.EPHEMERAL,
+        )
+        provider.call(req, "anthropic/claude-sonnet-4.5")
+        // System emitted as an ARRAY (not a string) when cache_control is present.
+        body shouldContain "\"system\":["
+        body shouldContain "\"cache_control\":{\"type\":\"ephemeral\"}"
+        // Last user-message text block also gets cache_control.
+        body shouldContain "\"type\":\"text\""
+    }
+
+    @Test
+    fun `cache_control omitted when payload below minimum cacheable size`() = runTest {
+        var body = ""
+        val provider = AnthropicProvider(mockClient({ body = it }, okResponse), cfg)
+        val req = LlmRequest(
+            subjectId = "victor",
+            task = TaskType.TEXT,
+            deviceClass = DeviceClass.VICTOR_DESKTOP,
+            capability = Capability.NON_STREAMING,
+            messages = listOf(LlmMessage(Role.USER, "tiny")),
+            systemPrompt = "short",
+            cacheControl = CacheControl.EPHEMERAL,
+        )
+        provider.call(req, "anthropic/claude-sonnet-4.5")
+        // cache_control field may serialize as null when not active — but it MUST NOT
+        // carry the ephemeral marker.
+        body shouldNotContain "\"cache_control\":{"
+        body shouldNotContain "\"type\":\"ephemeral\""
+        // System still serialized as a plain string when caching is disabled.
+        body shouldContain "\"system\":\"short\""
+    }
+
+    @Test
+    fun `cache_control omitted when CacheControl is NONE even with long payload`() = runTest {
+        var body = ""
+        val provider = AnthropicProvider(mockClient({ body = it }, okResponse), cfg)
+        val req = LlmRequest(
+            subjectId = "victor",
+            task = TaskType.TEXT,
+            deviceClass = DeviceClass.VICTOR_DESKTOP,
+            capability = Capability.NON_STREAMING,
+            messages = listOf(LlmMessage(Role.USER, longUserContent())),
+            systemPrompt = "long " + "system prompt ".repeat(200),
+            cacheControl = CacheControl.NONE,
+        )
+        provider.call(req, "anthropic/claude-sonnet-4.5")
+        body shouldNotContain "\"cache_control\":{"
+        body shouldNotContain "\"type\":\"ephemeral\""
+    }
+
+    @Test
+    fun `haiku model uses 2048-token minimum for cache eligibility`() = runTest {
+        var body = ""
+        val provider = AnthropicProvider(mockClient({ body = it }, okResponse), cfg)
+        // ~1500 tokens — above Sonnet 1024 minimum BUT below Haiku 2048 minimum.
+        val medium = "x".repeat(6000)
+        val req = LlmRequest(
+            subjectId = "victor",
+            task = TaskType.MODERATION,
+            deviceClass = DeviceClass.SERVER,
+            capability = Capability.NON_STREAMING,
+            messages = listOf(LlmMessage(Role.USER, medium)),
+            cacheControl = CacheControl.EPHEMERAL,
+        )
+        provider.call(req, "anthropic/claude-3.5-haiku")
+        // Below Haiku 2048 minimum → no ephemeral cache_control payload.
+        body shouldNotContain "\"cache_control\":{"
+        body shouldNotContain "\"type\":\"ephemeral\""
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.dietician.shared.llm.provider
 
+import com.dietician.shared.llm.CacheControl
 import com.dietician.shared.llm.FinishReason
 import com.dietician.shared.llm.LlmRequest
 import com.dietician.shared.llm.LlmResponse
@@ -14,6 +15,9 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.encodeToJsonElement
 
 /**
  * Anthropic direct-API adapter — Plan-2 Task 11.
@@ -35,6 +39,8 @@ class AnthropicProvider(
     private val providerId: ProviderId = ProviderId("anthropic"),
     private val apiVersion: String = "2023-06-01",
 ) {
+    private val json = Json { encodeDefaults = false }
+
     suspend fun call(request: LlmRequest, model: String): LlmResponse {
         val body = buildAnthropicRequest(request, model)
         val response: AnthropicResponse = client.post("${config.baseUrl}/v1/messages") {
@@ -47,12 +53,21 @@ class AnthropicProvider(
     }
 
     internal fun buildAnthropicRequest(request: LlmRequest, model: String): AnthropicRequest {
-        val messages = request.messages.filter { it.role != Role.SYSTEM }.map { msg ->
+        val applyCacheControl = request.cacheControl == CacheControl.EPHEMERAL &&
+            shouldEnableCaching(request, model)
+
+        val messageList = request.messages.filter { it.role != Role.SYSTEM }
+        // Identify the LAST USER message index so we can stamp cache_control on its last
+        // content block when caching is enabled. (Anthropic's caching guide: place
+        // cache_control on the LAST block of the cached prefix.)
+        val lastUserMessageIndex = messageList.indexOfLast { it.role == Role.USER }
+
+        val messages = messageList.mapIndexed { idx, msg ->
             val isUserWithAttachments = msg.role == Role.USER && request.attachments.isNotEmpty()
+            val isLastUserMessage = idx == lastUserMessageIndex && applyCacheControl
             val blocks: List<AnthropicRequestContentBlock> = if (isUserWithAttachments) {
                 buildList {
-                    // Anthropic convention: images first, then text. The order matches their
-                    // doc examples; LLM-side observed empirically to anchor on the first block.
+                    // Anthropic convention: images first, then text.
                     request.attachments.forEach { att ->
                         add(
                             AnthropicRequestContentBlock.Image(
@@ -63,33 +78,79 @@ class AnthropicProvider(
                             ),
                         )
                     }
-                    add(AnthropicRequestContentBlock.Text(msg.content))
+                    add(
+                        AnthropicRequestContentBlock.Text(
+                            text = msg.content,
+                            cache_control = if (isLastUserMessage) AnthropicCacheControl() else null,
+                        ),
+                    )
                 }
             } else {
-                listOf(AnthropicRequestContentBlock.Text(msg.content))
+                listOf(
+                    AnthropicRequestContentBlock.Text(
+                        text = msg.content,
+                        cache_control = if (isLastUserMessage) AnthropicCacheControl() else null,
+                    ),
+                )
             }
             AnthropicRequestMessage(role = msg.role.name.lowercase(), content = blocks)
         }
-        // Combine SYSTEM messages into Anthropic's top-level `system` field (Anthropic does NOT
-        // accept role=system inside the messages array).
+
+        // Combine SYSTEM messages into Anthropic's top-level `system` field.
         val systemFromMessages = request.messages.filter { it.role == Role.SYSTEM }
             .joinToString("\n\n") { it.content }
             .ifBlank { null }
-        val system = request.systemPrompt ?: systemFromMessages
+        val systemText = request.systemPrompt ?: systemFromMessages
+
+        val systemElement = when {
+            systemText.isNullOrBlank() -> null
+            applyCacheControl -> json.encodeToJsonElement(
+                listOf(
+                    AnthropicSystemBlock(
+                        text = systemText,
+                        cache_control = AnthropicCacheControl(),
+                    ),
+                ),
+            )
+            else -> JsonPrimitive(systemText)
+        }
+
         return AnthropicRequest(
             model = model,
             max_tokens = request.maxOutputTokens,
             messages = messages,
-            system = system,
+            system = systemElement,
             temperature = request.temperature,
             stream = false,
         )
     }
 
+    /**
+     * Plan-2 Task 25 known risk: Anthropic prompt caching has a minimum cacheable size
+     * (1024 tokens Sonnet / 2048 tokens Haiku). Below that, marking `cache_control` is
+     * pure noise + no discount. We use the char/4 estimate to gate.
+     */
+    internal fun shouldEnableCaching(request: LlmRequest, model: String): Boolean {
+        val minTokens = if ("haiku" in model.lowercase()) 2048 else 1024
+        var chars = 0
+        chars += request.systemPrompt?.length ?: 0
+        request.messages.forEach { chars += it.content.length }
+        val estimateTokens = chars / 4
+        return estimateTokens >= minTokens
+    }
+
     private fun toLlmResponse(resp: AnthropicResponse, model: String): LlmResponse {
         val text = resp.content.filter { it.type == "text" }.joinToString("") { it.text }
         val price = ModelPriceLookup.lookup(providerId, model)
-        val cost = price?.computeCostCents(resp.usage.input_tokens, resp.usage.output_tokens) ?: 0
+        // Plan-2 Task 25+26: Anthropic reports input_tokens NET of cache reads/writes. So
+        // uncached = input_tokens; cached_read + cached_write are SEPARATE counters.
+        // (Verified against Anthropic API docs as of 2026-05.)
+        val cost = price?.computeCostCentsWithCache(
+            uncachedInputTokens = resp.usage.input_tokens,
+            cacheReadTokens = resp.usage.cache_read_input_tokens,
+            cacheWriteTokens = resp.usage.cache_creation_input_tokens,
+            outputTokens = resp.usage.output_tokens,
+        ) ?: 0
         return LlmResponse(
             provider = providerId,
             model = resp.model.ifBlank { model },
