@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.components.PlannedCutToggle
 import com.dietician.shared.ui.components.SubjectCard
 import com.dietician.shared.ui.components.TodayNutrientsCard
+import com.dietician.shared.ui.i18n.strings
 
 /**
  * Home landing screen — top-to-bottom layout per Batch B brief:
@@ -71,16 +72,17 @@ fun HomeScreen(
 }
 
 /**
- * Placeholder for the MacroFactor-style Bayesian rolling 7-day TDEE chart that ships
- * in Batch D Task 19. Composable is paint-ready (selector visible on first frame) so
- * Compose UI tests can assert layout without the real chart implementation.
+ * Empty-state placeholder for the MacroFactor-style Bayesian rolling 7-day TDEE chart
+ * shipping in Batch D Task 19. Reads i18n copy so the surface looks like a user-facing
+ * empty state (not a TODO marker). Same testTag so Compose UI tests keep matching.
  */
 @Composable
 private fun AdaptiveExpenditurePreview() {
+    val s = strings()
     Card(modifier = Modifier.fillMaxWidth().padding(8.dp).testTag("home-expenditure-preview")) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "TDEE today — coming with Batch D chart")
-            Text(text = "Bayesian rolling 7-day estimate")
+            Text(text = s.expenditure_preview_empty_title)
+            Text(text = s.expenditure_preview_empty_body)
         }
     }
 }

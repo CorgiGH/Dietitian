@@ -86,6 +86,10 @@ interface Strings {
     val expenditure_chart_adjustment: String
     val expenditure_chart_target_line: String
 
+    // --- Home expenditure-preview empty state (Plan-4-5 post-impl council fix) ---
+    val expenditure_preview_empty_title: String
+    val expenditure_preview_empty_body: String
+
     // --- Photo suggestion (Task 20 RC11 already in base, extend) ---
     val photo_suggestion_confirm: String
     val photo_suggestion_edit: String
@@ -179,6 +183,10 @@ object Strings_en : Strings {
     override val expenditure_chart_adjustment: String = "7-day adjustment"
     override val expenditure_chart_target_line: String = "Target intake"
 
+    override val expenditure_preview_empty_title: String = "Building your estimate"
+    override val expenditure_preview_empty_body: String =
+        "Log meals and weigh-ins for 7 days — your adaptive TDEE appears here."
+
     override val photo_suggestion_confirm: String = "Confirm"
     override val photo_suggestion_edit: String = "Edit"
     override val photo_suggestion_wrong: String = "Wrong"
@@ -268,6 +276,10 @@ object Strings_ro : Strings {
     override val expenditure_chart_today: String = "Estimare azi"
     override val expenditure_chart_adjustment: String = "Ajustare 7 zile"
     override val expenditure_chart_target_line: String = "Țintă aport"
+
+    override val expenditure_preview_empty_title: String = "Estimarea ta se formează"
+    override val expenditure_preview_empty_body: String =
+        "Înregistrează mese și cântăriri timp de 7 zile — TDEE-ul tău adaptiv apare aici."
 
     override val photo_suggestion_confirm: String = "Confirmă"
     override val photo_suggestion_edit: String = "Editează"

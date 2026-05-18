@@ -80,6 +80,18 @@ class StringsTest {
     }
 
     @Test
+    fun `expenditure-preview empty-state non-blank + locale-distinct`() {
+        assertTrue(Strings_en.expenditure_preview_empty_title.isNotBlank())
+        assertTrue(Strings_en.expenditure_preview_empty_body.isNotBlank())
+        assertTrue(Strings_ro.expenditure_preview_empty_title.isNotBlank())
+        assertTrue(Strings_ro.expenditure_preview_empty_body.isNotBlank())
+        assertNotEquals(
+            Strings_en.expenditure_preview_empty_title,
+            Strings_ro.expenditure_preview_empty_title,
+        )
+    }
+
+    @Test
     fun `AppLocale fromTag resolves common cases`() {
         assertEquals(AppLocale.RO, AppLocale.fromTag("ro"))
         assertEquals(AppLocale.RO, AppLocale.fromTag("ro-MD"))
