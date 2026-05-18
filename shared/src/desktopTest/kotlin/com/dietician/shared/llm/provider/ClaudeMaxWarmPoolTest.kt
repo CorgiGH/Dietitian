@@ -1,9 +1,6 @@
 package com.dietician.shared.llm.provider
 
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -48,7 +45,7 @@ class ClaudeMaxWarmPoolTest {
     }
 
     @Test
-    fun `markSick evicts process and next acquire returns healthy replacement`() : Unit = kotlinx.coroutines.runBlocking {
+    fun `markSick evicts process and next acquire returns healthy replacement`(): Unit = kotlinx.coroutines.runBlocking {
         val spawner = FakeProcessSpawner { FakeSpawnedProcess(cannedOk) }
         val pool = ClaudeMaxWarmPool(spawner, size = 1, warmUpOnInit = true)
         val sick = pool.acquire()

@@ -32,9 +32,15 @@ class IdempotencyCacheTest {
         val cache = IdempotencyCache(ttlMs = 5_000, clock = { now })
         var dispatches = 0
 
-        cache.dedup(key) { dispatches++; sample("first") }
+        cache.dedup(key) {
+            dispatches++
+            sample("first")
+        }
         now = 100
-        cache.dedup(key) { dispatches++; sample("second") }
+        cache.dedup(key) {
+            dispatches++
+            sample("second")
+        }
         dispatches shouldBe 1
     }
 
@@ -44,9 +50,15 @@ class IdempotencyCacheTest {
         val cache = IdempotencyCache(ttlMs = 1_000, clock = { now })
         var dispatches = 0
 
-        cache.dedup(key) { dispatches++; sample("a") }
+        cache.dedup(key) {
+            dispatches++
+            sample("a")
+        }
         now = 1_001
-        cache.dedup(key) { dispatches++; sample("b") }
+        cache.dedup(key) {
+            dispatches++
+            sample("b")
+        }
         dispatches shouldBe 2
     }
 
@@ -135,7 +147,10 @@ class IdempotencyCacheTest {
         failJobs.forEach { it.isFailure shouldBe true }
 
         // Subsequent call should dispatch fresh (pending entry was cleared on failure).
-        val ok = cache.dedup(key) { dispatches++; sample("ok") }
+        val ok = cache.dedup(key) {
+            dispatches++
+            sample("ok")
+        }
         ok.text shouldBe "ok"
         dispatches shouldBe 2
     }
@@ -155,8 +170,14 @@ class IdempotencyCacheTest {
         val k1 = IdempotencyCache.Key("victor", "h1", "m1")
         val k2 = IdempotencyCache.Key("victor", "h2", "m1")
 
-        cache.dedup(k1) { dispatches++; sample() }
-        cache.dedup(k2) { dispatches++; sample() }
+        cache.dedup(k1) {
+            dispatches++
+            sample()
+        }
+        cache.dedup(k2) {
+            dispatches++
+            sample()
+        }
         dispatches shouldBe 2
     }
 }

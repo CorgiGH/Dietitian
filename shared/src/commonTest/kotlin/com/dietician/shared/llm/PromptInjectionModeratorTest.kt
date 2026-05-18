@@ -86,7 +86,8 @@ class PromptInjectionModeratorTest {
         val (router, _) = routerWith(
             """```json
             {"safe": true, "reason": "looks fine"}
-            ```""".trimIndent(),
+            ```
+            """.trimIndent(),
         )
         val moderator = PromptInjectionModerator(router)
         val verdict = moderator.moderate(

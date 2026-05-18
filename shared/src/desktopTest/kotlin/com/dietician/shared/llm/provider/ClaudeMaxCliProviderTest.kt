@@ -30,7 +30,7 @@ class ClaudeMaxCliProviderTest {
     )
 
     @Test
-    fun `RC2 forTesting companion factory injects spawner and skipWarmUp by default`() : Unit = runBlocking {
+    fun `RC2 forTesting companion factory injects spawner and skipWarmUp by default`(): Unit = runBlocking {
         val spawner = FakeProcessSpawner { FakeSpawnedProcess(cannedOk) }
         val provider = ClaudeMaxCliProvider.forTesting(spawner)
         // skipWarmUp=true default → no spawns yet
@@ -60,7 +60,7 @@ class ClaudeMaxCliProviderTest {
     }
 
     @Test
-    fun `cold-start tolerance — first call after skipWarmUp lazily spawns and returns`() : Unit = runBlocking {
+    fun `cold-start tolerance — first call after skipWarmUp lazily spawns and returns`(): Unit = runBlocking {
         val spawner = FakeProcessSpawner { FakeSpawnedProcess(cannedOk, latencyMs = 50) }
         val provider = ClaudeMaxCliProvider.forTesting(spawner, skipWarmUp = true, timeoutMs = 5_000)
         val resp = provider.call(req(), "anthropic/claude-sonnet-4.5")
@@ -69,7 +69,7 @@ class ClaudeMaxCliProviderTest {
     }
 
     @Test
-    fun `Windows-hang simulation — neverReturns proc hits timeout and circuit increments`() : Unit = runBlocking {
+    fun `Windows-hang simulation — neverReturns proc hits timeout and circuit increments`(): Unit = runBlocking {
         val spawner = FakeProcessSpawner { FakeSpawnedProcess(neverReturns = true) }
         val cb = CircuitBreaker(failureThreshold = 5, resetTimeoutMs = 30_000)
         val provider = ClaudeMaxCliProvider.forTesting(spawner, timeoutMs = 100, circuitBreaker = cb)
@@ -82,7 +82,7 @@ class ClaudeMaxCliProviderTest {
     }
 
     @Test
-    fun `circuit-breaker opens after 5 consecutive failures`() : Unit = runBlocking {
+    fun `circuit-breaker opens after 5 consecutive failures`(): Unit = runBlocking {
         val spawner = FakeProcessSpawner { FakeSpawnedProcess(throwOnSend = RuntimeException("boom")) }
         val cb = CircuitBreaker(failureThreshold = 5, resetTimeoutMs = 30_000)
         val provider = ClaudeMaxCliProvider.forTesting(spawner, poolSize = 1, circuitBreaker = cb)
@@ -103,7 +103,7 @@ class ClaudeMaxCliProviderTest {
     }
 
     @Test
-    fun `non-LlmError exception surfaces as TransientFailure`() : Unit = runBlocking {
+    fun `non-LlmError exception surfaces as TransientFailure`(): Unit = runBlocking {
         val spawner = FakeProcessSpawner {
             FakeSpawnedProcess(throwOnSend = RuntimeException("network glitch"))
         }

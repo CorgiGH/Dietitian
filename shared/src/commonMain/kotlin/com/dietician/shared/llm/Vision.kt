@@ -54,9 +54,14 @@ class Vision(private val router: LlmRouter) {
         val trimmed = raw.trim()
         val unfenced = if (trimmed.startsWith("```")) {
             val firstNewline = trimmed.indexOf('\n')
-            if (firstNewline < 0) trimmed.trim('`').trim()
-            else trimmed.substring(firstNewline + 1).trimEnd('`').trim()
-        } else trimmed
+            if (firstNewline < 0) {
+                trimmed.trim('`').trim()
+            } else {
+                trimmed.substring(firstNewline + 1).trimEnd('`').trim()
+            }
+        } else {
+            trimmed
+        }
         return try {
             JSON.decodeFromString(ParsedReceipt.serializer(), unfenced)
         } catch (t: Throwable) {

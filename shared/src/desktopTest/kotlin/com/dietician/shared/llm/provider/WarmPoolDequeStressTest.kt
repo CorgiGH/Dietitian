@@ -35,7 +35,7 @@ class WarmPoolDequeStressTest {
     )
 
     @Test
-    fun `N=64 concurrent calls reuse warm-pool processes never exceeding pool size`() : Unit = runBlocking {
+    fun `N=64 concurrent calls reuse warm-pool processes never exceeding pool size`(): Unit = runBlocking {
         val poolSize = 3
         val spawner = FakeProcessSpawner { FakeSpawnedProcess(cannedOk, latencyMs = 5) }
         val provider = ClaudeMaxCliProvider.forTesting(
@@ -70,7 +70,7 @@ class WarmPoolDequeStressTest {
     }
 
     @Test
-    fun `sick process eviction under concurrent load still caps spawns`() : Unit = runBlocking {
+    fun `sick process eviction under concurrent load still caps spawns`(): Unit = runBlocking {
         val poolSize = 2
         // Build a spawner whose first call throws (simulates a sick proc), but subsequent
         // procs are healthy. Sick procs get evicted + replacement spawned async.

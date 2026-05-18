@@ -36,7 +36,10 @@ class OpenRouterProvider(
     private val config: ProviderConfig,
     private val providerId: ProviderId = ProviderId("openrouter"),
 ) {
-    private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
+    private val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+    }
 
     suspend fun call(request: LlmRequest, model: String): LlmResponse {
         val body = buildOpenRouterRequest(request, model)

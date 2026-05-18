@@ -4,21 +4,14 @@ import com.dietician.shared.llm.AuditLogSink
 import com.dietician.shared.llm.BudgetLedger
 import com.dietician.shared.llm.DefaultRouterConfig
 import com.dietician.shared.llm.IdempotencyCache
-import com.dietician.shared.llm.LlmRequest
-import com.dietician.shared.llm.LlmResponse
 import com.dietician.shared.llm.LlmRouter
 import com.dietician.shared.llm.ProviderCallable
-import com.dietician.shared.llm.ProviderConfig
 import com.dietician.shared.llm.ProviderConfigDefaults
 import com.dietician.shared.llm.ProviderFactory
 import com.dietician.shared.llm.ProviderId
 import com.dietician.shared.llm.RouterConfig
 import com.dietician.shared.llm.SubjectCredentialStore
 import com.dietician.shared.llm.Timeouts
-import com.dietician.shared.llm.provider.AnthropicProvider
-import com.dietician.shared.llm.provider.GeminiProvider
-import com.dietician.shared.llm.provider.GroqProvider
-import com.dietician.shared.llm.provider.OpenRouterProvider
 import io.ktor.client.HttpClient
 
 /**

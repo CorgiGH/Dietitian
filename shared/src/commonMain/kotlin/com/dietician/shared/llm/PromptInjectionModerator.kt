@@ -76,8 +76,11 @@ class PromptInjectionModerator(private val router: LlmRouter) {
             // Drop opening fence (```json, ```, ```javascript, …) up to first newline,
             // then drop trailing ``` (possibly preceded by newline + whitespace).
             val firstNewline = trimmed.indexOf('\n')
-            if (firstNewline < 0) trimmed.trim('`').trim()
-            else trimmed.substring(firstNewline + 1).trimEnd('`').trim()
+            if (firstNewline < 0) {
+                trimmed.trim('`').trim()
+            } else {
+                trimmed.substring(firstNewline + 1).trimEnd('`').trim()
+            }
         } else {
             trimmed
         }
