@@ -7,7 +7,7 @@
 
 **Pre-requisites:**
 - SSH into VPS (or new VPS provisioned to the same Tailscale tailnet with `tag:dietician-backend`).
-- `rclone` installed + `onedrive-crypt:` remote configured per `docs/runbooks/onedrive-backup-setup.md`.
+- `rclone` installed + `onedrive-crypt:` remote configured per `docs/runbooks/rclone-onedrive-crypt-setup.md`.
 - Operator-typed passphrase for the tmpfs key unlock (see `docs/runbooks/restart.md`).
 
 ---
