@@ -48,7 +48,7 @@ class ClaudeMaxWarmPoolTest {
     }
 
     @Test
-    fun `markSick evicts process and next acquire returns healthy replacement`() = kotlinx.coroutines.runBlocking {
+    fun `markSick evicts process and next acquire returns healthy replacement`() : Unit = kotlinx.coroutines.runBlocking {
         val spawner = FakeProcessSpawner { FakeSpawnedProcess(cannedOk) }
         val pool = ClaudeMaxWarmPool(spawner, size = 1, warmUpOnInit = true)
         val sick = pool.acquire()
