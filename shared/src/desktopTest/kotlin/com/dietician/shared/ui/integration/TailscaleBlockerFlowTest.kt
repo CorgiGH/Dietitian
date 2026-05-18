@@ -43,7 +43,10 @@ class TailscaleBlockerFlowTest {
                     when (reachable) {
                         null -> SplashScreen()
                         false -> TailscaleDisconnectedScreen(
-                            onRetry = { retryCalls += 1; reachable = true },
+                            onRetry = {
+                                retryCalls += 1
+                                reachable = true
+                            },
                         )
                         true -> DieticianBottomNav()
                     }

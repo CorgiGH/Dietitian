@@ -1,10 +1,8 @@
 package com.dietician.shared.ui.auth
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.request.header
-import io.ktor.util.AttributeKey
 
 /**
  * Ktor plugin that injects `X-Subject-Id: <subjectId>` on every outbound request when

@@ -14,8 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.dietician.shared.ui.data.ConsentRow as ConsentRowDto
 import com.dietician.shared.ui.i18n.strings
+import com.dietician.shared.ui.data.ConsentRow as ConsentRowDto
 
 /**
  * Consent row composable (RC19 Council 1779120600).

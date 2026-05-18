@@ -19,9 +19,11 @@ class CrossDeviceVerifyListenerTest {
     fun `start does not throw when websocket route missing (501-tolerant)`() = runTest {
         // Plan-3 may not have shipped /auth/verify-events yet. The listener should
         // backoff + retry, never crash, even when the WS handshake fails.
-        val client = HttpClient(MockEngine { _ ->
-            respond("Not Implemented", HttpStatusCode.NotImplemented, headersOf())
-        })
+        val client = HttpClient(
+            MockEngine { _ ->
+                respond("Not Implemented", HttpStatusCode.NotImplemented, headersOf())
+            },
+        )
         val listener = CrossDeviceVerifyListener(client, "http://test", retryBackoffMillis = 1_000L)
         val scope = CoroutineScope(Dispatchers.Default)
         listener.start(scope, bindKey = "victor@example.com")
@@ -34,9 +36,11 @@ class CrossDeviceVerifyListenerTest {
 
     @Test
     fun `stop cancels the listener job`() = runTest {
-        val client = HttpClient(MockEngine { _ ->
-            respond("nope", HttpStatusCode.NotImplemented, headersOf())
-        })
+        val client = HttpClient(
+            MockEngine { _ ->
+                respond("nope", HttpStatusCode.NotImplemented, headersOf())
+            },
+        )
         val listener = CrossDeviceVerifyListener(client, "http://test", retryBackoffMillis = 5_000L)
         val scope = CoroutineScope(Dispatchers.Default)
         listener.start(scope, "k")

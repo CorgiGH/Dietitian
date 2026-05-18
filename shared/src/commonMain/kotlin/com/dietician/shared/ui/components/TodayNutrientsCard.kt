@@ -45,7 +45,7 @@ fun formatMacroLabel(name: String, actual: Double, target: Double, unit: String)
     val pct = if (target > 0.0) ((delta / target) * 100.0).toInt() else 0
     return when {
         target <= 0.0 -> "$name ${actual.toInt()}$unit"
-        delta >= 0.0 -> "$name ${actual.toInt()}$unit — above target by ${pct}%"
+        delta >= 0.0 -> "$name ${actual.toInt()}$unit — above target by $pct%"
         else -> "$name ${actual.toInt()}$unit — below target by ${-pct}%"
     }
 }

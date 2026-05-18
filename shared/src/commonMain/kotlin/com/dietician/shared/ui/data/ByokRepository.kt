@@ -40,8 +40,11 @@ class HttpByokRepository(
             contentType(ContentType.Application.Json)
             setBody(SaveBody(provider = provider, key = key))
         }
-        if (response.status.value in 200..299) ByokSaveOutcome.Ok
-        else ByokSaveOutcome.Failed("server ${response.status.value}")
+        if (response.status.value in 200..299) {
+            ByokSaveOutcome.Ok
+        } else {
+            ByokSaveOutcome.Failed("server ${response.status.value}")
+        }
     } catch (e: ResponseException) {
         ByokSaveOutcome.Failed("server ${e.response.status.value}")
     } catch (t: Throwable) {
@@ -54,8 +57,11 @@ class HttpByokRepository(
             contentType(ContentType.Application.Json)
             setBody(SaveBody(provider = provider, key = ""))
         }
-        if (response.status.value in 200..299) ByokSaveOutcome.Ok
-        else ByokSaveOutcome.Failed("server ${response.status.value}")
+        if (response.status.value in 200..299) {
+            ByokSaveOutcome.Ok
+        } else {
+            ByokSaveOutcome.Failed("server ${response.status.value}")
+        }
     } catch (e: ResponseException) {
         ByokSaveOutcome.Failed("server ${e.response.status.value}")
     } catch (t: Throwable) {

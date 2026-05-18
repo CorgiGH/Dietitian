@@ -44,10 +44,12 @@ class AuditLogViewModel(
     /** Trigger a refresh of audit rows (applies current callUuid/kind filter). */
     fun refresh() {
         coroutineScope.launch {
-            when (val out = repo.listJson(
-                callUuidFilter = _state.value.callUuidFilter,
-                kindFilter = _state.value.kindFilter,
-            )) {
+            when (
+                val out = repo.listJson(
+                    callUuidFilter = _state.value.callUuidFilter,
+                    kindFilter = _state.value.kindFilter,
+                )
+            ) {
                 is AuditListOutcome.Rows -> _state.value = _state.value.copy(
                     rows = out.rows,
                     loaded = true,
@@ -100,10 +102,12 @@ class AuditLogViewModel(
             // JSON path reuses the list response → serialize via the current rows.
             // For first-ship we re-fetch + save the raw bytes via a small inline-built JSON.
             // The simplest path: call listJson + write a JSON document.
-            when (val out = repo.listJson(
-                callUuidFilter = _state.value.callUuidFilter,
-                kindFilter = _state.value.kindFilter,
-            )) {
+            when (
+                val out = repo.listJson(
+                    callUuidFilter = _state.value.callUuidFilter,
+                    kindFilter = _state.value.kindFilter,
+                )
+            ) {
                 is AuditListOutcome.Rows -> {
                     val json = buildJsonString(out.rows)
                     val path = saveFile(

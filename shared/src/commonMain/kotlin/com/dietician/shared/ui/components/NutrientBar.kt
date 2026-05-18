@@ -4,13 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,8 +20,6 @@ import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.data.Nutrient
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.i18n.LocalAppLocale
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.staticCompositionLocalOf
 
 /**
  * Cronometer-style horizontal nutrient bar with target marker (Round-3 §1.13 #1 +
@@ -73,7 +70,7 @@ fun NutrientBar(
         val deltaPct = if (target > 0.0) (((actual - target) / target) * 100.0).toInt() else 0
         val label = when {
             target <= 0.0 -> "${actual.toInt()} ${nutrient.unit.display}"
-            isAbove -> "above target by ${deltaPct}%"
+            isAbove -> "above target by $deltaPct%"
             else -> "below target by ${-deltaPct}%"
         }
         NutrientChip(nutrientId = nutrient.id, label = label, isAbove = isAbove)

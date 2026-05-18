@@ -62,5 +62,5 @@ private fun formatCost(cents: Int): String {
     val dollars = cents / 100
     val rem = cents % 100
     val padded = rem.toString().padStart(2, '0')
-    return "cost: $$dollars.${padded}"
+    return "cost: $$dollars.$padded"
 }

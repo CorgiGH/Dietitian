@@ -44,7 +44,8 @@ object HttpClientFactory {
                 // we don't `defaultRequest { url(...) }` here because the repos
                 // build full URLs and Ktor's defaultRequest url() merges in a
                 // way that surprised tests during Batch B.
-                @Suppress("UNUSED_PARAMETER") val ref = baseUrlProvider
+                @Suppress("UNUSED_PARAMETER")
+                val ref = baseUrlProvider
             }
 
     /**

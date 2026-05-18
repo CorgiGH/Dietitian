@@ -63,7 +63,8 @@ class PantryViewModelTest {
             item("sku-c", expiresAtMs = today + 10 * day),
             item("sku-a", expiresAtMs = today + 1 * day),
             item("sku-b", expiresAtMs = today + 5 * day),
-            item("sku-d", expiresAtMs = null), // null-expiry goes last
+            // null-expiry goes last
+            item("sku-d", expiresAtMs = null),
         )
         val vm = PantryViewModel(
             reader = FakeReader(initial = unsorted),

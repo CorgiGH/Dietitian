@@ -21,7 +21,9 @@ import android.content.Context
  */
 object AndroidPlatformHandle {
     @Volatile private var applicationContext: Context? = null
+
     @Volatile private var capture: (() -> ByteArray?)? = null
+
     @Volatile private var saver: ((String, String, ByteArray) -> String?)? = null
 
     fun install(

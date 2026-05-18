@@ -9,9 +9,9 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.dietician.desktop.di.desktopPlatformModule
 import com.dietician.shared.Dietician
+import com.dietician.shared.ui.nav.DieticianApp
 import com.dietician.shared.ui.network.BaseUrlProvider
 import com.dietician.shared.ui.network.networkModule
-import com.dietician.shared.ui.nav.DieticianApp
 import com.dietician.shared.ui.platform.TailnetReachability
 import com.dietician.shared.ui.screens.SplashScreen
 import com.dietician.shared.ui.screens.TailscaleDisconnectedScreen

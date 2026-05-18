@@ -29,7 +29,14 @@ class AuthRepositoryTest {
     private fun mockClient(handler: MockRequestHandleScope.(HttpRequestData) -> HttpResponseData): HttpClient {
         val engine = MockEngine { req -> handler(req) }
         return HttpClient(engine) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true; encodeDefaults = true }) }
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        encodeDefaults = true
+                    },
+                )
+            }
             // Map non-2xx to ResponseException so AuthRepository.mapError can classify it.
             expectSuccess = true
         }

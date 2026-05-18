@@ -22,7 +22,6 @@ import com.dietician.shared.ui.data.AuditRepository
 import com.dietician.shared.ui.data.AuditRow
 import com.dietician.shared.ui.data.ConsentListOutcome
 import com.dietician.shared.ui.data.ConsentOutcome
-import com.dietician.shared.ui.data.ConsentRow
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.i18n.DieticianLocaleProvider
 import com.dietician.shared.ui.screens.AuditLogScreen

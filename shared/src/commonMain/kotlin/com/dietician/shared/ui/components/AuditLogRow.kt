@@ -62,7 +62,7 @@ fun AuditLogRow(
             }
             row.costCents?.let {
                 Text(
-                    text = "cost=${it}¢",
+                    text = "cost=$it¢",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

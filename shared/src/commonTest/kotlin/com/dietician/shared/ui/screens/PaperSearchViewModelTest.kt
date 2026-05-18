@@ -10,14 +10,15 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class PaperSearchViewModelTest {
 
     private class FakeRepo(private var outcome: PaperSearchOutcome) : PaperSearchRepository {
         val queries = mutableListOf<Pair<String, Set<String>>>()
-        fun setOutcome(o: PaperSearchOutcome) { outcome = o }
+        fun setOutcome(o: PaperSearchOutcome) {
+            outcome = o
+        }
         override suspend fun search(query: String, corpora: Set<String>): PaperSearchOutcome {
             queries += query to corpora
             return outcome

@@ -132,7 +132,7 @@ enum class WeightTrendWindow(val weeks: Int) {
 private fun formatSlope(slope: Double): String {
     val sign = if (slope >= 0) "+" else ""
     val rounded = (slope * 100).toInt() / 100.0
-    return "${sign}${rounded} kg/wk"
+    return "${sign}$rounded kg/wk"
 }
 
 private fun DrawScope.drawWeightSeries(series: List<WeeklyWeight>) {
@@ -171,7 +171,7 @@ private fun DrawScope.drawWeightSeries(series: List<WeeklyWeight>) {
 @Suppress("unused")
 private fun unusedKeep() {
     // keep helper math available for future bigorexia symmetry display.
-    val _x = abs(0.0)
-    val _m = min(0.0, 1.0)
-    val _M = max(0.0, 1.0)
+    abs(0.0)
+    min(0.0, 1.0)
+    max(0.0, 1.0)
 }

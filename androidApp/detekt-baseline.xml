@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:CameraXCapture.kt$CameraXCapture$92</ID>
+    <ID>SwallowedException:CameraXCapture.kt$CameraXCapture$t: Throwable</ID>
+    <ID>SwallowedException:MediaStoreSaver.kt$MediaStoreSaver$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:CameraXCapture.kt$CameraXCapture$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:MediaStoreSaver.kt$MediaStoreSaver$t: Throwable</ID>
+  </CurrentIssues>
+</SmellBaseline>

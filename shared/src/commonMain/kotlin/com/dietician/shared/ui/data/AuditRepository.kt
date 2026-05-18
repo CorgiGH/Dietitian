@@ -163,8 +163,11 @@ class HttpAuditRepository(
             contentType(ContentType.Application.Json)
             setBody(ConsentRequest(scope = scope, granted = granted))
         }
-        if (response.status.value in 200..299) ConsentOutcome.Ok
-        else ConsentOutcome.Failed("server ${response.status.value}")
+        if (response.status.value in 200..299) {
+            ConsentOutcome.Ok
+        } else {
+            ConsentOutcome.Failed("server ${response.status.value}")
+        }
     } catch (e: ResponseException) {
         ConsentOutcome.Failed("server ${e.response.status.value}")
     } catch (t: Throwable) {

@@ -22,7 +22,6 @@ enum class NutrientUnit(val display: String) {
     MCG("μg"),
     IU("IU"),
     KCAL("kcal"),
-    ;
 }
 
 enum class NutrientCategory {

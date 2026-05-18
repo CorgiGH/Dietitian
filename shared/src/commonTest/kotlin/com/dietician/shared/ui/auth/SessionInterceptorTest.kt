@@ -43,10 +43,12 @@ class SessionInterceptorTest {
             ),
         )
         var capturedSubjectId: String? = null
-        val client = HttpClient(MockEngine { request ->
-            capturedSubjectId = request.headers[SUBJECT_ID_HEADER]
-            respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
-        }) {
+        val client = HttpClient(
+            MockEngine { request ->
+                capturedSubjectId = request.headers[SUBJECT_ID_HEADER]
+                respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
+            },
+        ) {
             install(SessionInterceptor)
         }
         client.get("http://test/me")
@@ -57,10 +59,12 @@ class SessionInterceptorTest {
     fun `omits header when no session`() = runTest {
         // SessionStore.clear() ran in BeforeTest.
         var capturedSubjectId: String? = "preset"
-        val client = HttpClient(MockEngine { request ->
-            capturedSubjectId = request.headers[SUBJECT_ID_HEADER]
-            respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
-        }) {
+        val client = HttpClient(
+            MockEngine { request ->
+                capturedSubjectId = request.headers[SUBJECT_ID_HEADER]
+                respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
+            },
+        ) {
             install(SessionInterceptor)
         }
         client.get("http://test/health")
@@ -77,10 +81,12 @@ class SessionInterceptorTest {
             ),
         )
         var captured: String? = null
-        val client = HttpClient(MockEngine { request ->
-            captured = request.headers[SUBJECT_ID_HEADER]
-            respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
-        }) {
+        val client = HttpClient(
+            MockEngine { request ->
+                captured = request.headers[SUBJECT_ID_HEADER]
+                respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
+            },
+        ) {
             install(SessionInterceptor)
         }
         client.get("http://test/me")
@@ -127,10 +133,12 @@ class SubjectIdConsistencyTest {
             ),
         )
         var captured: String? = null
-        val client = HttpClient(MockEngine { request ->
-            captured = request.headers[SUBJECT_ID_HEADER]
-            respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
-        }) {
+        val client = HttpClient(
+            MockEngine { request ->
+                captured = request.headers[SUBJECT_ID_HEADER]
+                respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
+            },
+        ) {
             install(SessionInterceptor)
         }
         client.get("http://test/me")
