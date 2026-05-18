@@ -9,6 +9,7 @@ import com.dietician.server.auth.ResendClient
 import com.dietician.server.auth.SessionStore
 import com.dietician.server.db.DatabaseFactory
 import com.dietician.server.middleware.RateLimiter
+import com.dietician.server.repo.BudgetRepository
 import com.dietician.server.repo.ConsentRepository
 import com.dietician.server.repo.CredentialRepository
 import com.dietician.server.repo.EventRepository
@@ -40,6 +41,7 @@ val dieticianModule = module {
     single { ConsentRepository(get()) }
     single { CredentialRepository(get()) }
     single { PaperFetchQueueRepository(get()) }
+    single { BudgetRepository(get()) }
 
     // ----- audit -----
     single { AuditLogWriter(get()) }
