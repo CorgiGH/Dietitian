@@ -17,6 +17,7 @@ import com.dietician.shared.ui.platform.TailnetReachability
 import com.dietician.shared.ui.screens.SplashScreen
 import com.dietician.shared.ui.screens.TailscaleDisconnectedScreen
 import org.koin.core.context.GlobalContext
+import kotlinx.coroutines.launch
 import org.koin.core.context.startKoin
 
 /**
@@ -68,5 +69,13 @@ private fun bootKoin() {
     if (existing != null) return
     startKoin {
         modules(networkModule, uiModule, desktopPlatformModule)
+    }
+    // iter-11: drain any outbox rows left from a desktop crash mid-Coach-call.
+    // Server is idempotent on commit (returns status='not_reserved' for keys
+    // that never reached reserve). Runs async on Dispatchers.IO so we don't
+    // block the Compose window opening on network latency.
+    val replay: com.dietician.shared.llm.DesktopOutboxReplay = GlobalContext.get().get()
+    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+        runCatching { replay.replayPending() }
     }
 }
