@@ -68,21 +68,31 @@ val llmModule = module {
             auditLog = get(),
         )
     }
-    // iter-11: server-routed Coach Stream. Followup: replace with real
-    // LlmRouterStream wiring once the StreamProviderCallable table is exposed
-    // by LlmRouterFactory. Fail-loud today — gate-1 council flagged that a
-    // silent noop here would let every Android /coach/stream call land a
-    // falsified status=success audit row + drain budget. Throwing on first
-    // collect surfaces the missing wire as a 500 + journal log instead.
+    // iter-11.5: bridge LlmStream over the existing non-streaming LlmRouter.
+    // No per-provider streaming surface exists yet (OpenRouterProvider /
+    // GroqProvider only expose suspend `call`). The bridge fires the full
+    // route() call and emits exactly one terminal LlmChunk carrying the entire
+    // response. UX trade: Android sees the whole reply land at once instead
+    // of token-by-token. Iter-11.6 followup: add `fun stream(...)` to each
+    // provider + build the StreamProviderCallable map + use LlmRouterStream
+    // directly. This single-chunk adapter is intentionally simple — it reuses
+    // the LlmRouter's already-shipped budget reserve / audit / failover
+    // semantics so there's no duplicated orchestration.
     single<com.dietician.shared.llm.LlmStream> {
+        val router: com.dietician.shared.llm.LlmRouter = get()
         object : com.dietician.shared.llm.LlmStream {
             override fun streamRoute(
                 request: com.dietician.shared.llm.LlmRequest,
             ): kotlinx.coroutines.flow.Flow<com.dietician.shared.llm.LlmChunk> =
                 kotlinx.coroutines.flow.flow {
-                    error(
-                        "Coach LlmStream not wired in production llmModule " +
-                            "(followup: bind LlmRouterStream from :shared:llm provider table)",
+                    val resp = router.route(request)
+                    emit(
+                        com.dietician.shared.llm.LlmChunk(
+                            text = resp.text,
+                            tokenCount = resp.outputTokens,
+                            isDone = true,
+                            finalResponse = resp,
+                        ),
                     )
                 }
         }
