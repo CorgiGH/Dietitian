@@ -9,7 +9,7 @@ import com.dietician.shared.ui.auth.OnboardingActions
 import com.dietician.shared.ui.auth.OnboardingActionsImpl
 import com.dietician.shared.ui.components.PlannedCutController
 import com.dietician.shared.ui.components.TodayNutrientsState
-import com.dietician.shared.ui.data.PantryItem
+import com.dietician.shared.ui.data.InMemoryPantryStore
 import com.dietician.shared.ui.data.PantryReader
 import com.dietician.shared.ui.data.PantryWriter
 import com.dietician.shared.ui.data.Recipe
@@ -67,8 +67,11 @@ import org.koin.dsl.module
 val uiModule: Module = module {
     // Stubs — replaced by real impls in future iterations / Plan-1/2/3 wires.
     single<HomeLoader> { StubHomeLoader() }
-    single<PantryReader> { StubPantryReader() }
-    single<PantryWriter> { StubPantryWriter() }
+    // Single in-memory store backs both reader + writer — pantry FAB writes land
+    // in the same flow the screen renders. Plan-1 SQLDelight pair swaps in here.
+    single { InMemoryPantryStore() }
+    single<PantryReader> { get<InMemoryPantryStore>() }
+    single<PantryWriter> { get<InMemoryPantryStore>() }
     single<LlmStream> { StubLlmStream() }
     single<AuditLogSink> { StubAuditLogSink() }
     single<RecipeReader> { StubRecipeReader() }
@@ -117,20 +120,6 @@ private class StubHomeLoader : HomeLoader {
 
     override suspend fun loadTodayNutrients(subjectId: String): TodayNutrientsState =
         TodayNutrientsState()
-}
-
-private class StubPantryReader : PantryReader {
-    override fun flowSnapshot(): Flow<List<PantryItem>> = flowOf(emptyList())
-}
-
-private class StubPantryWriter : PantryWriter {
-    override fun addItem(item: PantryItem) {
-        // no-op — real writer enqueues a pantry_event row via Plan-1 EventStore
-    }
-
-    override fun removeItem(sku: String, qty: Double, unit: String) {
-        // no-op — see addItem
-    }
 }
 
 private class StubLlmStream : LlmStream {
