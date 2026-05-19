@@ -4,6 +4,7 @@ import android.app.Application
 import com.dietician.android.di.androidPlatformModule
 import com.dietician.shared.ui.di.uiModule
 import com.dietician.shared.ui.network.networkModule
+import com.dietician.shared.ui.settings.AndroidFilesDirHolder
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 
@@ -28,6 +29,8 @@ import org.koin.core.context.startKoin
 class DieticianAndroidApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        // Populate before Koin starts so SettingsPersistence.android can resolve its path.
+        AndroidFilesDirHolder.filesDir = filesDir
         bootKoin()
     }
 
