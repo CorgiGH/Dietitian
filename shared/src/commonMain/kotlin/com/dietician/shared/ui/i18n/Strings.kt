@@ -99,6 +99,13 @@ interface Strings {
     val foodlog_photo_button: String
     val foodlog_same_as_recent_button: String
 
+    // --- MealDetail iter-8 ---
+    val meal_detail_servings_label: String
+    val meal_detail_ingredients_label: String
+    val meal_detail_cook_with_pantry_button: String
+    val meal_detail_cook_action_toast: String
+    val meal_detail_not_found: String
+
     // --- FoodLog iter-4 sub-buttons (barcode toast + same-as-recent sheet) ---
     val foodlog_barcode_coming_soon: String
     val foodlog_same_as_recent_empty_title: String
@@ -279,6 +286,13 @@ object Strings_en : Strings {
     override val foodlog_photo_button: String = "Photo of meal"
     override val foodlog_same_as_recent_button: String = "Same as recent"
 
+    override val meal_detail_servings_label: String = "Servings"
+    override val meal_detail_ingredients_label: String = "Ingredients"
+    override val meal_detail_cook_with_pantry_button: String = "Cook with this pantry"
+    override val meal_detail_cook_action_toast: String =
+        "Pantry cross-check ships with Plan-1 + Plan-7. Recipe logged as a meal here later."
+    override val meal_detail_not_found: String = "Recipe not found in the local corpus."
+
     override val foodlog_barcode_coming_soon: String =
         "Barcode scan ships with Plan-6 — type the food manually below."
     override val foodlog_same_as_recent_empty_title: String = "No recent meals yet"
@@ -456,6 +470,13 @@ object Strings_ro : Strings {
     override val foodlog_barcode_button: String = "Scanează cod de bare"
     override val foodlog_photo_button: String = "Fotografie masă"
     override val foodlog_same_as_recent_button: String = "La fel ca recent"
+
+    override val meal_detail_servings_label: String = "Porții"
+    override val meal_detail_ingredients_label: String = "Ingrediente"
+    override val meal_detail_cook_with_pantry_button: String = "Gătește din cămară"
+    override val meal_detail_cook_action_toast: String =
+        "Verificarea cămării vine cu Plan-1 + Plan-7. Rețeta se va loga ca masă aici ulterior."
+    override val meal_detail_not_found: String = "Rețeta nu există în corpus-ul local."
 
     override val foodlog_barcode_coming_soon: String =
         "Scanarea codurilor vine cu Plan-6 — scrie mâncarea manual mai jos."
