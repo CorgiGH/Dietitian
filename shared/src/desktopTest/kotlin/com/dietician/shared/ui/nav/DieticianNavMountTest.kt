@@ -6,6 +6,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import com.dietician.shared.ui.components.AILiteracyVersionGate
+import com.dietician.shared.ui.data.InMemoryPantryStore
+import com.dietician.shared.ui.data.PantryReader
+import com.dietician.shared.ui.data.PantryWriter
 import com.dietician.shared.ui.di.uiModule
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.network.networkModule
@@ -43,6 +46,11 @@ class DieticianNavMountTest {
             // a leftover settings.json from a prior session on this machine.
             val testOverride = module {
                 single<SettingsStore>(createdAtStart = true) { InMemorySettingsStore() }
+                // Override SqlDelight-backed pantry with in-memory store — tests
+                // don't bring up the platform DataModule that binds DieticianDatabase.
+                single(createdAtStart = true) { InMemoryPantryStore() }
+                single<PantryReader>(createdAtStart = true) { get<InMemoryPantryStore>() }
+                single<PantryWriter>(createdAtStart = true) { get<InMemoryPantryStore>() }
             }
             startKoin { modules(networkModule, uiModule, testOverride) }
         }

@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.dietician.shared.ui.components.PantryItemCard
 import com.dietician.shared.ui.data.PantryItem
+import com.dietician.shared.ui.data.SqlDelightPantryStore
 import com.dietician.shared.ui.i18n.strings
 import kotlinx.coroutines.launch
 
@@ -184,7 +185,7 @@ private fun AddPantryItemDialog(
             TextButton(
                 onClick = {
                     val item = PantryItem(
-                        skuUuid = "manual-${name.trim().lowercase().hashCode()}-$qty",
+                        skuUuid = SqlDelightPantryStore.encodeSku(name),
                         displayName = name.trim(),
                         qty = qty.toDouble(),
                         unit = unit.trim().ifBlank { "g" },

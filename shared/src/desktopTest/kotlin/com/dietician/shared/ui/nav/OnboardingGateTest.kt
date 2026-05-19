@@ -7,6 +7,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import com.dietician.shared.ui.components.AILiteracyVersionGate
+import com.dietician.shared.ui.data.InMemoryPantryStore
+import com.dietician.shared.ui.data.PantryReader
+import com.dietician.shared.ui.data.PantryWriter
 import com.dietician.shared.ui.di.uiModule
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.network.networkModule
@@ -34,6 +37,9 @@ class OnboardingGateTest {
         if (GlobalContext.getOrNull() == null) {
             val testOverride = module {
                 single<SettingsStore>(createdAtStart = true) { InMemorySettingsStore() }
+                single(createdAtStart = true) { InMemoryPantryStore() }
+                single<PantryReader>(createdAtStart = true) { get<InMemoryPantryStore>() }
+                single<PantryWriter>(createdAtStart = true) { get<InMemoryPantryStore>() }
             }
             startKoin { modules(networkModule, uiModule, testOverride) }
         }
