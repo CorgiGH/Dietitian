@@ -1,22 +1,42 @@
 # Runbook — First VPS deploy of dietician-backend.service
 
-**Source of truth:** Plan-3 post-impl council 1779073963 + spec §A18 + Plan-3 systemd unit (`/etc/systemd/system/dietician-backend.service`).
+**Source of truth:** Plan-3 post-impl council 1779073963 + spec §A18 + Plan-3 systemd unit (in-repo source: [`infra/systemd/dietician-backend.service`](../../infra/systemd/dietician-backend.service); deployed at `/etc/systemd/system/dietician-backend.service`) + council 1779188964 (deploy scoping + heap caps).
 
-**Symptom / trigger:** master has plan-3 merged + the server JAR is ready to ship to `46.247.109.91`. `dietician-backend.service` is currently `inactive (dead)` because `/opt/dietician/lib/` has no JAR yet.
+**Symptom / trigger:** master has plan-1 + plan-2 + plan-3 + plan-4-5 merged + the server JAR is ready to ship to `46.247.109.91`. `dietician-backend.service` is currently `inactive (dead)` because `/opt/dietician/lib/` has no JAR yet.
+
+**Scope of this runbook (council 1779188964 ruling):** This is the **tracer-bullet first deploy** — the smallest cut that retires the most risk. Goal: JAR + Postgres password + Tailscale bind + `/health` reachable + one end-to-end write round-trip (POST `/sync/push` from desktop → row in Postgres → desktop pull confirms shape). **Resend (magic-link real), OpenRouter (Coach real), Rclone (backup cron) are STUB-OK for this deploy** — each lands in its own follow-up smoke session. The router and email/cron DI gracefully degrade when env keys are absent (see "Stub-mode envs" below).
 
 **Key invariants:**
 - App-user password lives ONLY in `/run/dietician-keys/db.passphrase` (tmpfs). Set at first deploy. NOT in `/etc/dietician/env`.
-- Resend API key is the magic-link email transport. Free tier (100 emails/day) covers all of Victor + 4 friends.
-- OneDrive-crypt remote (see `rclone-onedrive-crypt-setup.md`) must be configured before the first backup tick fires.
+- JVM heap is bounded in the systemd unit (`-Xms128m -Xmx384m`, `MemoryMax=512M`, `MemoryHigh=400M`) AND the unit has `OOMScoreAdjust=500` so the kernel prefers killing dietician-backend before the Minecraft co-tenant (locked at 4G, default OOMScoreAdjust=0). Council 1779188964 R1 (CRITICAL).
+- Bind host is auto-discovered via `tailscale ip -4` subprocess in `TailnetDiscovery` (see `server/src/main/kotlin/com/dietician/server/Main.kt:25-31`). Override with env `DIETICIAN_HOST_OVERRIDE=<ip>` for dev / CI / unit tests. Port: `DIETICIAN_PORT` env, default 8081.
+- Resend API key (magic-link email transport, free tier 100/day) → STUB-OK if blank; magic-link request still returns 202 + `emailSent=true` but no email actually fires (see "Stub-mode envs").
+- OneDrive-crypt remote → STUB-OK if `DIETICIAN_DISABLE_INJVM_CRONS=true`; backup cron stays dormant.
+
+---
+
+## Stub-mode envs (council 1779188964 R2 — tracer-bullet first deploy)
+
+The server DI gracefully degrades when these env vars are missing or blank — the JVM boots, `/health` returns 200, and routes that need the missing dependency either stub or 503. This means **most** services can be deferred to follow-up deploys without blocking the first start:
+
+| Env var | Missing/blank behavior | DI hook |
+|---|---|---|
+| `RESEND_API_KEY` | `NoopEmailSender` — magic-link `request` still 202s + `emailSent=true`, but no email is actually sent. Token row still lands in `magic_link_tokens` and can be SQL-grepped. | `DieticianModule.kt:77-84` |
+| `OPENROUTER_API_KEY` / `GROQ_API_KEY` | `llmAdaptersOnlyModule` instead of `llmModule` — Coach route returns 503 / stub, server still boots | `Application.kt:57-66` |
+| `DIETICIAN_DISABLE_INJVM_CRONS=true` | AuditPruneCron + BackupCron both skip schedule — `rclone` is never invoked even if remote is unconfigured | `Application.kt:138-144` |
+| `RCLONE_CONFIG_PASS_FILE` | If crons disabled (above), this is unused. If crons enabled and value missing, BackupCron fails per-tick (audit-logged + rethrown to cron loop); server stays up. | `BackupCron.kt` |
+
+**Tracer-bullet env is in Step 2 below.** The round-trip in Step 8 requires a session cookie, which requires magic-link verify, which is most painless when `RESEND_API_KEY` is set (free Resend tier). The SQL-grep fallback path works without Resend but adds operator friction every smoke.
 
 ---
 
 ## Pre-deploy checklist (user-side)
 
-- [ ] PR #1 (plan-1 → master), PR #2 (plan-3 → master) both merged. PR #3 + #4 are merge-AFTER candidates and don't block this deploy.
+- [x] PR #1 (plan-1 → master), PR #2 (plan-3 → master), PR #3 (plan-2 → master), PR #11 + iter-N PRs (plan-4-5 → master) all merged 2026-05-18 / 2026-05-19.
 - [ ] Postgres app-user password chosen (32+ chars, password-manager stored).
-- [ ] Resend account created at https://resend.com/signup. Free tier API key copied. From-address provisioned (`noreply@<your-domain>` or use Resend's testing domain).
-- [ ] OneDrive-crypt rclone remote configured per `rclone-onedrive-crypt-setup.md`. Verified via `rclone lsd onedrive-crypt:`.
+- [ ] Resend account created at https://resend.com/signup. Free tier API key copied. From-address provisioned (`onboarding@resend.dev` works without a verified domain). _Skippable only if you prefer the SQL-grep workaround in Step 7 path (b)._
+- [ ] (Deferred to follow-up deploy) OneDrive-crypt rclone remote per `rclone-onedrive-crypt-setup.md`.
+- [ ] (Deferred to follow-up deploy) OpenRouter API key at `openrouter.ai/keys`. Coach stays stubbed until this lands.
 - [ ] Tailscale ACL fragment applied at `login.tailscale.com/admin/acls` (allowing the dietician-backend tag — see spec §2).
 
 ---
@@ -62,14 +82,28 @@ sudo chmod 0640 /etc/dietician/env
 sudo nano /etc/dietician/env
 ```
 
-Required edits:
+**Tracer-bullet first deploy — minimum env (council 1779188964 R2):**
 ```
 PG_PASSWORD=<paste-strong-passphrase>           # same as Postgres ALTER USER
-OPENROUTER_API_KEY=<your-openrouter-key>        # from openrouter.ai/keys
-RESEND_API_KEY=<your-resend-key>                # NEW for Plan-3 magic-link email
-RESEND_FROM=<noreply@your-domain.com>           # NEW for Plan-3
-RCLONE_CONFIG_PASS_FILE=/run/dietician-keys/rclone.passphrase   # NEW for Plan-3 backup
+RESEND_API_KEY=<your-resend-key>                # magic-link email (free tier 100/day)
+RESEND_FROM=<noreply@your-domain.com>           # or onboarding@resend.dev (Resend default)
+DIETICIAN_DISABLE_INJVM_CRONS=true              # skip audit-prune + backup cron until rclone configured
+# OPENROUTER_API_KEY=                           # blank → llmAdaptersOnlyModule, Coach stays stub
+# GROQ_API_KEY=                                 # blank → llmAdaptersOnlyModule
+# RCLONE_CONFIG_PASS_FILE=                      # unused when DIETICIAN_DISABLE_INJVM_CRONS=true
 ```
+
+**Why Resend is required for tracer-bullet (despite council R2 deferring "magic-link real"):**
+`/sync/push` requires a valid session cookie (see `SyncRoutes.kt:63` `requireSubject`). The round-trip that proves Plan-3↔Plan-4-5 DTO alignment cannot run anonymously. Two paths to a session:
+- **(a) Set RESEND_API_KEY** → real magic-link email arrives → click → desktop client gets cookie. ~5 min Resend signup, free.
+- **(b) Leave RESEND_API_KEY blank** → NoopEmailSender no-ops the send → server still inserts a row in `magic_link_tokens` → operator must SQL-grep the latest token and manually POST `/auth/magic-link/verify` with it. Doable but adds friction every smoke.
+
+Path (a) is recommended. The strict council R2 deferral of Resend assumed magic-link-real means "Victor opens his Gmail and clicks the link" — that's still the case here, but the alternative (path b) is more painful than just setting one env var.
+
+**Follow-up deploys** (each its own contained smoke session — do NOT bundle):
+1. OpenRouter + Groq → Coach real responses (set `OPENROUTER_API_KEY` + `GROQ_API_KEY`, restart, smoke `/coach/stream`).
+2. Rclone OneDrive-crypt → backup cron (configure rclone per `rclone-onedrive-crypt-setup.md`, set `RCLONE_CONFIG_PASS_FILE=/run/dietician-keys/rclone.passphrase`, remove `DIETICIAN_DISABLE_INJVM_CRONS`, restart, force-tick via `BACKUP_TEST_INTERVAL_MIN=5`).
+3. ntfy push wiring + Tailscale ACL refinement.
 
 If `RESEND_API_KEY`, `RESEND_FROM`, `RCLONE_CONFIG_PASS_FILE` are missing from env.example, add them — Plan-3 introduced them but env.example dates from Session 1. (Backlog: update env.example to match.)
 
@@ -106,6 +140,30 @@ ssh root@46.247.109.91 "ls -la /opt/dietician/lib/dietician-server.jar"
 
 ---
 
+## Step 3.5 — install / refresh the systemd unit (council 1779188964 R1)
+
+The source-of-truth unit lives in the repo at [`infra/systemd/dietician-backend.service`](../../infra/systemd/dietician-backend.service). Copy it into place on every deploy that changes JVM flags, env file location, or cgroup caps:
+
+```bash
+scp infra/systemd/dietician-backend.service root@46.247.109.91:/tmp/
+ssh root@46.247.109.91 "sudo install -m 0644 -o root -g root /tmp/dietician-backend.service /etc/systemd/system/ && sudo systemctl daemon-reload"
+```
+
+**What the unit guarantees (council 1779188964 R1 — CRITICAL mitigations):**
+- JVM heap bounded: `-Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200`.
+- cgroup memory cap: `MemoryHigh=400M` (throttle) + `MemoryMax=512M` (hard kill).
+- `OOMScoreAdjust=500` — under host-wide memory pressure the kernel picks dietician-backend before Minecraft (locked at 4G, default `OOMScoreAdjust=0`). This is defense-in-depth on top of the cgroup cap.
+- `Requires=postgresql.service` + `After=network-online.target` — backend won't even try to start if Postgres is down.
+- Restart policy: `on-failure` with 10s backoff (not `always` — avoids tight restart loops on systematic failure).
+
+Verify the unit was loaded:
+```bash
+ssh root@46.247.109.91 "systemctl cat dietician-backend | grep -E 'MemoryMax|OOMScoreAdjust|Xmx'"
+# Expected lines from the repo unit visible.
+```
+
+---
+
 ## Step 4 — enable + start
 
 ```bash
@@ -131,17 +189,19 @@ sudo tail -f /opt/dietician/logs/backend.log
 
 ```bash
 curl -sf http://100.101.47.77:8081/health | jq .
-# Expected:
+# Expected (tracer-bullet first deploy with DIETICIAN_DISABLE_INJVM_CRONS=true):
 # {
-#   "status": "ok",
-#   "postgres_ok": true,
-#   "tombstone_grace_stale_count": 0,
-#   "last_backup_at": null,
-#   ...
+#   "service": "dietician-backend",
+#   "version": "...",
+#   "spec_date": "2026-05-17",
+#   "status": "ok"
 # }
+# Note: extended /health fields (postgres_ok, tombstone_grace_stale_count,
+# last_backup_at) ship in a follow-up deploy once HealthRepository is wired
+# end-to-end; the top-level `status: ok` is the tracer-bullet criterion.
 ```
 
-`last_backup_at` is null until the first cron tick (24h after first start). To force a faster tick for smoke purposes, set `BACKUP_TEST_INTERVAL_MIN=5` in `/etc/dietician/env`, restart the service, then watch `/health.last_backup_at` populate within 5 minutes.
+`last_backup_at` lands when (a) `DIETICIAN_DISABLE_INJVM_CRONS` is unset and (b) the first cron tick fires (default daily at 04:30). To force a faster tick for smoke purposes once you re-enable crons: set `BACKUP_TEST_INTERVAL_MIN=5` in `/etc/dietician/env`, restart the service, then watch `/health.last_backup_at` populate within 5 minutes. For the first deploy, leave both unset — backup proving comes in the rclone follow-up deploy.
 
 ---
 
@@ -158,19 +218,83 @@ If this returns 403 / connection-refused: the Tailscale ACL fragment isn't appli
 
 ---
 
-## Step 7 — first user (Victor) end-to-end
+## Step 7 — magic-link sign-in (Victor)
 
 ```bash
 # Trigger a magic-link email to Victor's address (replace if different):
-curl -X POST http://100.101.47.77:8081/auth/magic-link \
+curl -X POST http://100.101.47.77:8081/auth/magic-link/request \
   -H "Content-Type: application/json" \
   -d '{"email":"victor.vasiloi@gmail.com"}'
-# Expected: 202 Accepted (queued for Resend).
+# Expected: 202 Accepted with body {"emailSent": true}.
 ```
 
-Check Gmail for the magic-link email. Click → should land on a deep-link to the desktop or Android app (whichever is registered as the URL handler) OR open the web magic-link verifier page.
+Check Gmail for the magic-link email. Click → should land on a deep-link to the desktop or Android app (whichever is registered as the URL handler) OR open the web magic-link verifier page. The desktop client should now hold a session cookie (verify in the app's network tab or by inspecting `~/.dietician/cookies` if persisted).
 
 In Resend's dashboard, confirm the email shows `delivered` status within 30 seconds.
+
+**If RESEND_API_KEY was left blank** (path (b) from "Why Resend is required" above):
+```bash
+# Find the latest unconsumed token via SQL:
+sudo -u postgres psql -d dietician -c \
+  "SELECT token FROM magic_link_tokens WHERE consumed_at IS NULL ORDER BY created_at DESC LIMIT 1;"
+# Then verify it manually:
+curl -X POST http://100.101.47.77:8081/auth/magic-link/verify \
+  -H "Content-Type: application/json" \
+  -d '{"token":"<paste-token>"}' \
+  -c /tmp/dietician-session.txt
+# Expected: 200 OK + Set-Cookie: dietician_session=... (saved to /tmp/dietician-session.txt).
+```
+
+---
+
+## Step 8 — tracer-bullet write round-trip (council 1779188964 ruling)
+
+The end-to-end test that exercises the Plan-3↔Plan-4-5 DTO seam. Send one synthetic event via POST /sync/push, verify it lands in Postgres, then GET /sync/pull to confirm it round-trips with the same shape.
+
+**8a. Push one event** (uses cookie from Step 7 — replace `<COOKIE>` with the value of `dietician_session` from the magic-link verify response):
+
+```bash
+curl -X POST http://100.101.47.77:8081/sync/push \
+  -H "Content-Type: application/json" \
+  -H "Cookie: dietician_session=<COOKIE>" \
+  -d '{
+    "deviceId": "tracer-bullet-smoke",
+    "events": [
+      {
+        "eventUuid": "11111111-1111-1111-1111-111111111111",
+        "tableName": "food_log_events",
+        "payloadJson": "{\"hlc\":\"2026-05-19T00:00:00Z|00000000\",\"food_name\":\"tracer\",\"kcal\":100,\"protein_g\":10,\"carbs_g\":5,\"fat_g\":3}"
+      }
+    ]
+  }'
+# Expected: 200 OK with body
+# {"accepted":[{"eventUuid":"11111111-...","serverRecvAt":...}],"rejected":[]}
+```
+
+**8b. Confirm the row landed in Postgres:**
+
+```bash
+ssh root@46.247.109.91 "sudo -u postgres psql -d dietician -c \
+  \"SELECT event_uuid, table_name, subject_id, server_recv_at FROM event_ledger WHERE event_uuid = '11111111-1111-1111-1111-111111111111';\""
+# Expected: 1 row, subject_id = Victor's UUID, table_name = food_log_events, server_recv_at populated.
+```
+
+**8c. Pull it back** (round-trip):
+
+```bash
+curl -sf "http://100.101.47.77:8081/sync/pull?table=food_log_events" \
+  -H "Cookie: dietician_session=<COOKIE>" | jq .
+# Expected: a "rows" array containing the synthetic event with same eventUuid + payload.
+# The "cursor" field in the response is what a real client would persist for resumption.
+```
+
+**8d. STOP.** Tracer-bullet round-trip green = deploy is shipped. Mark the following as deferred to follow-up deploys:
+- Coach real responses (needs OPENROUTER_API_KEY + GROQ_API_KEY)
+- Receipt OCR upload pipeline (needs ClaudeMax CLI subprocess + S3-equivalent)
+- Backup cron + OneDrive-crypt (needs rclone configured + DIETICIAN_DISABLE_INJVM_CRONS removed)
+- ntfy push delivery (needs Tailscale ACL refinement)
+
+Do NOT iterate on UI (plan-4-5 iter-11+) until the round-trip is green — per council 1779188964 R3, additional UI iterations against stubs accrue DTO drift that this round-trip is the only signal for.
 
 ---
 
@@ -190,8 +314,13 @@ In Resend's dashboard, confirm the email shows `delivered` status within 30 seco
   ```
 - Install missing: `sudo -u postgres psql -d dietician -c "CREATE EXTENSION IF NOT EXISTS pgvector;"`.
 
-**`curl /health` returns 502:**
-- The backend is up but the JAR didn't bind to `0.0.0.0` or to the Tailscale IP. Check `/etc/dietician/env` `DIETICIAN_BIND` value — should be `100.101.47.77` (the Tailscale IP), not `127.0.0.1`.
+**`curl /health` returns 502 / connection refused:**
+- The backend bound to the wrong host. `TailnetDiscovery` runs `tailscale ip -4` on the VPS at startup; if Tailscale is down the discovery falls back to refuse-to-start (per `Main.kt:25-31` + council 1779120000 RC5). Verify `ssh root@46.247.109.91 "tailscale ip -4"` returns `100.101.47.77`.
+- To override the auto-discovery (e.g. for a `127.0.0.1` smoke test), set `DIETICIAN_HOST_OVERRIDE=127.0.0.1` in `/etc/dietician/env`. Port comes from `DIETICIAN_PORT` (default 8081).
+
+**Service refuses to start with "TailnetDiscovery: no IPv4 from `tailscale ip -4`" banner:**
+- Tailscale daemon is down on VPS. Restart it: `ssh root@46.247.109.91 "sudo systemctl restart tailscaled"`. Retry `tailscale ip -4` until it returns `100.101.47.77`.
+- If Tailscale is intentionally off (debugging localhost), set `DIETICIAN_HOST_OVERRIDE=127.0.0.1` in env file.
 
 **Resend returns 401:**
 - API key wrong or revoked. Verify in Resend dashboard. Regenerate + re-paste into `/etc/dietician/env`. Restart the service.
@@ -220,3 +349,4 @@ The next deploy attempt can repeat Steps 3-4 with a corrected JAR / corrected en
 - Plan-3 RC10: tmpfs key unlock pattern via `dietician-key-unlock.service` (manual on first deploy + every reboot — see `restart.md`).
 - Plan-3 RC11: restore.md + this runbook + rclone-onedrive-crypt-setup.md + pg-dump-auth.md collectively demonstrate GDPR Art 32 restorability.
 - §A18: backup destination = UAIC OneDrive 1TB.
+- **Council 1779188964 (deploy scoping + heap caps):** runbook reframed around tracer-bullet first slice; JVM heap caps + `MemoryMax=512M` + `OOMScoreAdjust=500` (MC-protect) mandatory in systemd unit; in-repo source of truth at `infra/systemd/dietician-backend.service`; OpenRouter / Coach / Rclone / B2 / ntfy deferred to follow-up deploys.
