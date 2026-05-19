@@ -7,14 +7,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,7 +28,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -48,10 +53,12 @@ import kotlinx.coroutines.launch
  * `meal-detail-servings`, `meal-detail-ingredient-{index}`,
  * `meal-detail-cook-button`, `meal-detail-loading`, `meal-detail-not-found`.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MealDetailScreen(
     recipeId: String,
     reader: RecipeReader,
+    onBack: () -> Unit = {},
 ) {
     val s = strings()
     val snackbarHost = remember { SnackbarHostState() }
@@ -67,72 +74,85 @@ fun MealDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
             .testTag("meal-detail-screen"),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        when {
-            !loaded -> {
-                CircularProgressIndicator(modifier = Modifier.testTag("meal-detail-loading"))
-            }
-            recipe == null -> {
-                Text(
-                    text = s.meal_detail_not_found,
-                    modifier = Modifier.testTag("meal-detail-not-found"),
-                )
-            }
-            else -> {
-                val r = recipe!!
-                Text(
-                    text = r.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.testTag("meal-detail-title"),
-                )
-                Text(
-                    text = "${s.meal_detail_servings_label}: ${r.servings}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.testTag("meal-detail-servings"),
-                )
-                Text(
-                    text = s.meal_detail_ingredients_label,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        r.ingredientsCsv.split(",").forEachIndexed { i, ing ->
-                            Text(
-                                text = "• ${ing.trim()}",
-                                modifier = Modifier.testTag("meal-detail-ingredient-$i"),
-                            )
+        TopAppBar(
+            title = { Text(recipe?.title ?: "") },
+            navigationIcon = {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.testTag("meal-detail-back"),
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                    )
+                }
+            },
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            when {
+                !loaded -> {
+                    CircularProgressIndicator(modifier = Modifier.testTag("meal-detail-loading"))
+                }
+                recipe == null -> {
+                    Text(
+                        text = s.meal_detail_not_found,
+                        modifier = Modifier.testTag("meal-detail-not-found"),
+                    )
+                }
+                else -> {
+                    val r = recipe!!
+                    Text(
+                        text = r.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.testTag("meal-detail-title"),
+                    )
+                    Text(
+                        text = "${s.meal_detail_servings_label}: ${r.servings}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.testTag("meal-detail-servings"),
+                    )
+                    Text(
+                        text = s.meal_detail_ingredients_label,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            r.ingredientsCsv.split(",").forEachIndexed { i, ing ->
+                                Text(
+                                    text = "• ${ing.trim()}",
+                                    modifier = Modifier.testTag("meal-detail-ingredient-$i"),
+                                )
+                            }
                         }
                     }
-                }
-                Button(
-                    onClick = {
-                        scope.launch {
-                            snackbarHost.showSnackbar(s.meal_detail_cook_action_toast)
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("meal-detail-cook-button"),
-                ) {
-                    Text(s.meal_detail_cook_with_pantry_button)
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                snackbarHost.showSnackbar(s.meal_detail_cook_action_toast)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("meal-detail-cook-button"),
+                    ) {
+                        Text(s.meal_detail_cook_with_pantry_button)
+                    }
                 }
             }
+            SnackbarHost(hostState = snackbarHost, modifier = Modifier.fillMaxWidth()) { data ->
+                Snackbar(modifier = Modifier.padding(8.dp)) { Text(data.visuals.message) }
+            }
         }
-        SnackbarHost(hostState = snackbarHost, modifier = Modifier.fillMaxWidth()) { data ->
-            Snackbar(modifier = Modifier.padding(8.dp)) { Text(data.visuals.message) }
-        }
-        // Spacer for SnackbarHost.
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.Bottom,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) { }
     }
 }

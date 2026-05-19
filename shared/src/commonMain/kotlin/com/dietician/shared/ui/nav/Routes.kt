@@ -10,6 +10,7 @@ import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.dietician.shared.ui.data.RecipeReader
+import com.dietician.shared.ui.i18n.strings
 import com.dietician.shared.ui.screens.AuditLogScreen
 import com.dietician.shared.ui.screens.AuditLogViewModel
 import com.dietician.shared.ui.screens.CoachChatScreen
@@ -104,10 +105,13 @@ sealed class DieticianScreen : Screen {
         override fun Content() {
             val viewModel = koinInject<CookbookViewModel>()
             val navigator = LocalNavigator.currentOrThrow
-            CookbookScreen(
-                viewModel = viewModel,
-                onRecipeTap = { recipeId -> navigator.push(MealDetail(recipeId)) },
-            )
+            val s = strings()
+            PushedScreenScaffold(title = s.settings_view_cookbook_button, onBack = { navigator.pop() }) {
+                CookbookScreen(
+                    viewModel = viewModel,
+                    onRecipeTap = { recipeId -> navigator.push(MealDetail(recipeId)) },
+                )
+            }
         }
     }
 
@@ -117,7 +121,11 @@ sealed class DieticianScreen : Screen {
         @Composable
         override fun Content() {
             val viewModel = koinInject<PaperSearchViewModel>()
-            PaperSearchScreen(viewModel = viewModel)
+            val navigator = LocalNavigator.currentOrThrow
+            val s = strings()
+            PushedScreenScaffold(title = s.settings_search_papers_button, onBack = { navigator.pop() }) {
+                PaperSearchScreen(viewModel = viewModel)
+            }
         }
     }
 
@@ -157,7 +165,11 @@ sealed class DieticianScreen : Screen {
         @Composable
         override fun Content() {
             val viewModel = koinInject<AuditLogViewModel>()
-            AuditLogScreen(viewModel = viewModel)
+            val navigator = LocalNavigator.currentOrThrow
+            val s = strings()
+            PushedScreenScaffold(title = s.audit_log_title, onBack = { navigator.pop() }) {
+                AuditLogScreen(viewModel = viewModel)
+            }
         }
     }
 
@@ -168,10 +180,13 @@ sealed class DieticianScreen : Screen {
         override fun Content() {
             val viewModel = koinInject<ReceiptUploadViewModel>()
             val navigator = LocalNavigator.currentOrThrow
-            ReceiptUploadScreen(
-                viewModel = viewModel,
-                onViewInPantry = { navigator.replaceAll(Pantry) },
-            )
+            val s = strings()
+            PushedScreenScaffold(title = s.foodlog_photo_button, onBack = { navigator.pop() }) {
+                ReceiptUploadScreen(
+                    viewModel = viewModel,
+                    onViewInPantry = { navigator.replaceAll(Pantry) },
+                )
+            }
         }
     }
 
@@ -181,7 +196,12 @@ sealed class DieticianScreen : Screen {
         @Composable
         override fun Content() {
             val reader = koinInject<RecipeReader>()
-            MealDetailScreen(recipeId = mealId, reader = reader)
+            val navigator = LocalNavigator.currentOrThrow
+            MealDetailScreen(
+                recipeId = mealId,
+                reader = reader,
+                onBack = { navigator.pop() },
+            )
         }
     }
 }
