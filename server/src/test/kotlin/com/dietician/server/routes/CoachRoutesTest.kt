@@ -14,6 +14,9 @@ import com.dietician.server.middleware.RateLimiter
 import com.dietician.server.middleware.SESSION_COOKIE
 import com.dietician.server.repo.BudgetRepository
 import com.dietician.server.repo.SubjectRepository
+import com.dietician.shared.llm.LlmChunk
+import com.dietician.shared.llm.LlmRequest
+import com.dietician.shared.llm.LlmStream
 import com.dietician.shared.llm.PiiRedactor
 import io.ktor.client.request.cookie
 import io.ktor.client.request.post
@@ -26,6 +29,8 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.testing.testApplication
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
@@ -119,7 +124,12 @@ class CoachRoutesTest {
             single { CoachRepository(get<DatabaseFactory>()) }
             single { BudgetRepository(get<DatabaseFactory>()) }
             single { PiiRedactor() }
-            single { CoachService(get(), get(), get()) }
+            single<LlmStream> {
+                object : LlmStream {
+                    override fun streamRoute(request: LlmRequest): Flow<LlmChunk> = emptyFlow()
+                }
+            }
+            single { CoachService(get(), get(), get(), get()) }
         }
 
     @Test

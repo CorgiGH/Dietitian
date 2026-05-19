@@ -6,7 +6,12 @@ import com.dietician.server.coach.CoachService
 import com.dietician.server.db.DatabaseFactory
 import com.dietician.server.db.runMigrations
 import com.dietician.server.repo.BudgetRepository
+import com.dietician.shared.llm.LlmChunk
+import com.dietician.shared.llm.LlmRequest
+import com.dietician.shared.llm.LlmStream
 import com.dietician.shared.llm.PiiRedactor
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -35,7 +40,11 @@ class CoachOrphanCleanupCronTest {
             ).apply { setObject(1, subjectId) }.execute()
         }
         repo = CoachRepository(db)
-        service = CoachService(repo, BudgetRepository(db), PiiRedactor())
+        val noopStream =
+            object : LlmStream {
+                override fun streamRoute(request: LlmRequest): Flow<LlmChunk> = emptyFlow()
+            }
+        service = CoachService(repo, BudgetRepository(db), PiiRedactor(), noopStream)
         cron = CoachOrphanCleanupCron(db)
     }
 

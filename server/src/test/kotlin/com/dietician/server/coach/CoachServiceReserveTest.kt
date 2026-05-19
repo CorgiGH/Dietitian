@@ -3,7 +3,12 @@ package com.dietician.server.coach
 import com.dietician.server.db.DatabaseFactory
 import com.dietician.server.db.runMigrations
 import com.dietician.server.repo.BudgetRepository
+import com.dietician.shared.llm.LlmChunk
+import com.dietician.shared.llm.LlmRequest
+import com.dietician.shared.llm.LlmStream
 import com.dietician.shared.llm.PiiRedactor
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -33,7 +38,11 @@ class CoachServiceReserveTest {
             ).apply { setObject(1, subjectId) }.execute()
         }
         repo = CoachRepository(db)
-        service = CoachService(repo, BudgetRepository(db), PiiRedactor())
+        val noopStream =
+            object : LlmStream {
+                override fun streamRoute(request: LlmRequest): Flow<LlmChunk> = emptyFlow()
+            }
+        service = CoachService(repo, BudgetRepository(db), PiiRedactor(), noopStream)
     }
 
     @AfterAll
@@ -49,14 +58,14 @@ class CoachServiceReserveTest {
             service.reserve(
                 subjectId = subjectId,
                 request =
-                    CoachReserveRequest(
-                        idempotencyKey = key.toString(),
-                        prompt = "How many grams of chicken for 50g protein?",
-                        locale = "en",
-                        provider = "openrouter",
-                        estimatedCostCents = 5,
-                        reservationTtlSeconds = 60,
-                    ),
+                CoachReserveRequest(
+                    idempotencyKey = key.toString(),
+                    prompt = "How many grams of chicken for 50g protein?",
+                    locale = "en",
+                    provider = "openrouter",
+                    estimatedCostCents = 5,
+                    reservationTtlSeconds = 60,
+                ),
             )
         assertTrue(resp is CoachServiceReserveResult.Reserved, "got: $resp")
         val r = resp.envelope
@@ -102,14 +111,14 @@ class CoachServiceReserveTest {
             service.reserve(
                 subjectId = subjectId,
                 request =
-                    CoachReserveRequest(
-                        idempotencyKey = UUID.randomUUID().toString(),
-                        prompt = "x",
-                        locale = "en",
-                        provider = "capped",
-                        estimatedCostCents = 5,
-                        reservationTtlSeconds = 60,
-                    ),
+                CoachReserveRequest(
+                    idempotencyKey = UUID.randomUUID().toString(),
+                    prompt = "x",
+                    locale = "en",
+                    provider = "capped",
+                    estimatedCostCents = 5,
+                    reservationTtlSeconds = 60,
+                ),
             )
         assertTrue(resp is CoachServiceReserveResult.Rejected, "got: $resp")
         assertEquals("over_budget", resp.reason)

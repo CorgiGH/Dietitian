@@ -6,15 +6,21 @@ import com.dietician.server.coach.CoachReserveRejected
 import com.dietician.server.coach.CoachReserveRequest
 import com.dietician.server.coach.CoachService
 import com.dietician.server.coach.CoachServiceReserveResult
+import com.dietician.server.coach.CoachStreamRequest
 import com.dietician.server.middleware.requireSubject
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import kotlinx.coroutines.flow.collect
 import org.koin.ktor.ext.inject
 
 /**
@@ -50,6 +56,17 @@ fun Application.installCoachRoutes() {
                 val req = call.receive<CoachCommitRequest>()
                 val resp = coach.commit(subjectId, req)
                 call.respond(HttpStatusCode.OK, resp)
+            }
+            post("/stream") {
+                val subjectId = call.requireSubject(authService) ?: return@post
+                val req = call.receive<CoachStreamRequest>()
+                call.response.header(HttpHeaders.CacheControl, "no-cache")
+                call.respondTextWriter(contentType = ContentType.Text.EventStream) {
+                    coach.streamServerRouted(subjectId, req).collect { chunk ->
+                        write("data: $chunk\n\n")
+                        flush()
+                    }
+                }
             }
         }
     }

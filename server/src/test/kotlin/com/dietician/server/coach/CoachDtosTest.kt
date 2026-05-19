@@ -5,7 +5,10 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class CoachDtosTest {
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     @Test
     fun `reserve request round-trips`() {
