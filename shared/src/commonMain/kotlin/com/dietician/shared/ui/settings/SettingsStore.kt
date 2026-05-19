@@ -72,3 +72,48 @@ class InMemorySettingsStore(initial: SettingsState = SettingsState()) : Settings
         _state.value = _state.value.copy(aiLiteracyAckedVersion = version)
     }
 }
+
+/**
+ * File-backed wrapper around [InMemorySettingsStore]. Loads state from
+ * [SettingsPersistence.load] on construction, then writes back via
+ * [SettingsPersistence.save] after every mutation so the next app boot picks up
+ * the user's last locale / theme / consent / onboarding state.
+ */
+class PersistedSettingsStore(
+    private val persistence: SettingsPersistence,
+) : SettingsStore {
+    private val delegate: InMemorySettingsStore =
+        InMemorySettingsStore(initial = persistence.load() ?: SettingsState())
+
+    override val state: StateFlow<SettingsState> = delegate.state
+
+    override fun setLocale(locale: AppLocale) {
+        delegate.setLocale(locale)
+        persistence.save(delegate.state.value)
+    }
+
+    override fun setDarkTheme(enabled: Boolean) {
+        delegate.setDarkTheme(enabled)
+        persistence.save(delegate.state.value)
+    }
+
+    override fun setUseAccessibleTypography(enabled: Boolean) {
+        delegate.setUseAccessibleTypography(enabled)
+        persistence.save(delegate.state.value)
+    }
+
+    override fun setCoachDisabled(disabled: Boolean) {
+        delegate.setCoachDisabled(disabled)
+        persistence.save(delegate.state.value)
+    }
+
+    override fun markOnboarded() {
+        delegate.markOnboarded()
+        persistence.save(delegate.state.value)
+    }
+
+    override fun setAiLiteracyAckedVersion(version: String?) {
+        delegate.setAiLiteracyAckedVersion(version)
+        persistence.save(delegate.state.value)
+    }
+}

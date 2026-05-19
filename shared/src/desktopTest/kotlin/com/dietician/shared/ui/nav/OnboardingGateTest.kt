@@ -10,10 +10,12 @@ import com.dietician.shared.ui.components.AILiteracyVersionGate
 import com.dietician.shared.ui.di.uiModule
 import com.dietician.shared.ui.i18n.AppLocale
 import com.dietician.shared.ui.network.networkModule
+import com.dietician.shared.ui.settings.InMemorySettingsStore
 import com.dietician.shared.ui.settings.SettingsStore
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import org.koin.dsl.module
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -30,7 +32,10 @@ class OnboardingGateTest {
     @BeforeTest
     fun startKoinForTest() {
         if (GlobalContext.getOrNull() == null) {
-            startKoin { modules(networkModule, uiModule) }
+            val testOverride = module {
+                single<SettingsStore>(createdAtStart = true) { InMemorySettingsStore() }
+            }
+            startKoin { modules(networkModule, uiModule, testOverride) }
         }
         // Fresh state — leave onboarded=false + ai-literacy=null so the gate fires.
     }

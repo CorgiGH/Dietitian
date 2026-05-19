@@ -26,7 +26,8 @@ import com.dietician.shared.ui.screens.PantryViewModel
 import com.dietician.shared.ui.screens.PaperSearchViewModel
 import com.dietician.shared.ui.screens.ReceiptUploadViewModel
 import com.dietician.shared.ui.screens.SettingsViewModel
-import com.dietician.shared.ui.settings.InMemorySettingsStore
+import com.dietician.shared.ui.settings.PersistedSettingsStore
+import com.dietician.shared.ui.settings.SettingsPersistence
 import com.dietician.shared.ui.settings.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -75,7 +76,8 @@ val uiModule: Module = module {
     single<LlmStream> { StubLlmStream() }
     single<AuditLogSink> { StubAuditLogSink() }
     single<RecipeReader> { StubRecipeReader() }
-    single<SettingsStore> { InMemorySettingsStore() }
+    single { SettingsPersistence() }
+    single<SettingsStore> { PersistedSettingsStore(persistence = get()) }
     single<OnboardingActions> { OnboardingActionsImpl(settingsStore = get()) }
 
     // UI-side coroutine scope. We use Dispatchers.Default because kotlinx-coroutines
