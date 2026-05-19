@@ -16,8 +16,8 @@ import com.dietician.shared.ui.network.networkModule
 import com.dietician.shared.ui.platform.TailnetReachability
 import com.dietician.shared.ui.screens.SplashScreen
 import com.dietician.shared.ui.screens.TailscaleDisconnectedScreen
-import org.koin.core.context.GlobalContext
 import kotlinx.coroutines.launch
+import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 
 /**
