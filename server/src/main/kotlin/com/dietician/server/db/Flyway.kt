@@ -2,29 +2,24 @@ package com.dietician.server.db
 
 import org.flywaydb.core.Flyway
 import org.slf4j.LoggerFactory
-import java.io.File
-import java.net.URLDecoder
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.util.jar.JarInputStream
 
 /**
- * Anchor object whose classloader / JAR-location backs the migration scan.
- * Council 1779188964 R3 surfaced that `Flyway.configure()` in any form —
- * with or without an explicit classloader — fails to scan `db/migration/`
- * inside Ktor fat-JARs built by the `ktor-gradle-plugin` on Flyway 10.20.x.
- * The fat-JAR layout, packaging metadata, or some interaction with Flyway
- * 10's switched-to-Java-8-resource-scanner leaves `getResources("db/migration")`
- * empty even though `unzip -l app.jar | grep db/migration` shows all SQL
- * files at the expected path.
+ * Anchor object whose classloader backs the migration scan.
  *
- * Workaround (verified working on the 2026-05-19 redeploy): extract every
- * `db/migration/V*.sql` entry from the running JAR to a temp directory
- * at startup, then point Flyway at the temp dir via `filesystem:`. Tests
- * (`runMigrations` against Testcontainers from `:server:test`) work via
- * the classpath path on a normal Gradle classpath; production via the
- * filesystem path on the fat-JAR. Both code paths are exercised by the
- * `NoMigrationsFoundRegressionTest`.
+ * Followup #16 (2026-05-19) root-caused why Flyway 10.20 emitted "No migrations
+ * found" on the Ktor fat-JAR even with all 21 `db/migration/V*.sql` entries
+ * present at the expected path: the Shadow plugin's default merge strategy
+ * overwrites `META-INF/services/org.flywaydb.core.extensibility.Plugin` instead
+ * of concatenating. `flyway-database-postgresql` ships a 3-line file;
+ * `flyway-core` ships a 22-line file that includes `CoreResourceTypeProvider`
+ * (registers the V/R/U prefix types used by `ResourceNameParser`). When the
+ * 3-line file wins the merge, every `V001__*.sql` is rejected as
+ * "Unrecognised migration name format" before any SQL runs.
+ *
+ * Fix: `mergeServiceFiles()` on the `shadowJar` task in `server/build.gradle.kts`
+ * concatenates both files (25 entries) so `CoreResourceTypeProvider` is loaded.
+ * With that in place, `classpath:db/migration` resolves correctly inside the
+ * fat-JAR — no temp-extract workaround needed.
  */
 private object FlywayClassloaderAnchor
 
@@ -35,63 +30,33 @@ fun runMigrations(
     user: String,
     password: String,
 ): Int {
-    val tempDir = extractMigrationsFromJar()
-    val builder =
+    log.info("Flyway: scanning classpath:db/migration")
+    val flyway =
         Flyway.configure(FlywayClassloaderAnchor::class.java.classLoader)
             .dataSource(jdbcUrl, user, password)
-            .baselineOnMigrate(false)
-    // Flyway 10.20.x rejects MIXED locations when one resolves to zero
-    // migrations (the classpath: scan returns empty on Ktor fat-JARs even
-    // with the temp-extract workaround active). Use exactly one location
-    // per invocation:
-    //   - fat-JAR  → filesystem: only (the temp dir we just populated)
-    //   - tests / `:server:run` → classpath: only (Gradle classpath layout)
-    val configured =
-        if (tempDir != null) {
-            log.info("Flyway: scanning {} (extracted from JAR)", tempDir.absolutePath)
-            builder.locations("filesystem:${tempDir.absolutePath}")
-        } else {
-            log.info("Flyway: not running from a JAR — using classpath:db/migration only")
-            builder.locations("classpath:db/migration")
-        }
-    return configured.load().migrate().migrationsExecuted
-}
-
-/**
- * Returns the path to a fresh temp dir containing every `db/migration/V*.sql`
- * entry from the running JAR, or null when the application isn't running
- * from a JAR (e.g. `:server:run` with class output dir on classpath).
- */
-private fun extractMigrationsFromJar(): File? {
-    val codeSourceUrl = FlywayClassloaderAnchor::class.java.protectionDomain?.codeSource?.location ?: return null
-    val sourcePath = URLDecoder.decode(codeSourceUrl.path, Charsets.UTF_8)
-    val sourceFile = File(sourcePath)
-    if (!sourceFile.isFile || !sourcePath.endsWith(".jar")) {
-        // Classes are on the filesystem (Gradle classpath layout); classpath: works there.
-        return null
-    }
-    val tempDir = Files.createTempDirectory("dietician-flyway").toFile()
-    tempDir.deleteOnExit()
-    var count = 0
-    JarInputStream(sourceFile.inputStream()).use { jis ->
-        while (true) {
-            val entry = jis.nextJarEntry ?: break
-            val name = entry.name
-            if (!entry.isDirectory && name.startsWith("db/migration/") && name.endsWith(".sql")) {
-                val target = File(tempDir, File(name).name)
-                Files.copy(jis, target.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                target.deleteOnExit()
-                count++
-            }
-        }
-    }
-    if (count == 0) {
-        log.warn(
-            "Flyway: no db/migration/V*.sql entries found inside {}; falling back to classpath: only",
-            sourcePath,
-        )
-        return null
-    }
-    log.info("Flyway: extracted {} migration files from {} to {}", count, sourcePath, tempDir.absolutePath)
-    return tempDir
+            .locations("classpath:db/migration")
+            // VPS schema for the initial deploy (2026-05-19) was manually
+            // `psql -f`-applied while the META-INF/services merge bug blocked
+            // Flyway from finding any migration. Once that's fixed, Flyway
+            // would otherwise try to re-apply V001..V021 against a populated
+            // schema and fail on "relation X already exists".
+            //
+            // baselineOnMigrate=true + baselineVersion=021 tells Flyway:
+            //   - if `flyway_schema_history` is absent AND the schema has objects,
+            //     write a single BASELINE row at 021 and treat V001..V021 as
+            //     already-applied.
+            //   - if the history table exists, the flag is a no-op.
+            //
+            // Fresh databases (CI Testcontainers) start with an empty schema,
+            // so the flag is also a no-op there and all 21 migrations run
+            // from scratch.
+            .baselineOnMigrate(true)
+            .baselineVersion("021")
+            .baselineDescription("Pre-merge manual psql apply")
+            // Fail fast if a future migration filename drifts away from the
+            // V<version>__<description>.sql convention. The default INFO-level
+            // warning hid the SPI merge bug for two days.
+            .validateMigrationNaming(true)
+            .load()
+    return flyway.migrate().migrationsExecuted
 }
