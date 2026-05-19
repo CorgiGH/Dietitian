@@ -232,18 +232,38 @@ Check Gmail for the magic-link email. Click → should land on a deep-link to th
 
 In Resend's dashboard, confirm the email shows `delivered` status within 30 seconds.
 
-**If RESEND_API_KEY was left blank** (path (b) from "Why Resend is required" above):
+**If RESEND_API_KEY was left blank** (path (b) from "Why Resend is required" above) — Plan-3 V1 ships `MagicLinkService` as **in-memory only** (`ConcurrentHashMap`, no Postgres table). The token is captured by `NoopEmailSender` and logged at INFO so the operator can grep it from the backend log:
+
 ```bash
-# Find the latest unconsumed token via SQL:
-sudo -u postgres psql -d dietician -c \
-  "SELECT token FROM magic_link_tokens WHERE consumed_at IS NULL ORDER BY created_at DESC LIMIT 1;"
-# Then verify it manually:
+# Trigger token issuance first:
+curl -X POST http://100.101.47.77:8081/auth/magic-link/request \
+  -H "Content-Type: application/json" \
+  -d '{"email":"victor.vasiloi@gmail.com"}'
+# Expected: 202 (anti-enumeration — same shape for known/unknown emails).
+
+# Grep the issued token from NoopEmailSender's log line:
+ssh root@46.247.109.91 "grep 'NoopEmailSender' /opt/dietician/logs/backend.log | tail -1"
+# Extract `token=<VALUE>` from the htmlBody field in the log line.
+
+# Verify manually:
+TOKEN='<paste-value>'
 curl -X POST http://100.101.47.77:8081/auth/magic-link/verify \
   -H "Content-Type: application/json" \
-  -d '{"token":"<paste-token>"}' \
-  -c /tmp/dietician-session.txt
+  -d "{\"token\":\"${TOKEN}\"}" \
+  -c /tmp/dietician-session.txt -v 2>&1 | grep -i 'set-cookie'
 # Expected: 200 OK + Set-Cookie: dietician_session=... (saved to /tmp/dietician-session.txt).
 ```
+
+`magic_link_pending` (PG canonical) lands in Plan-3.5 along with passkey support — at that point the SQL path becomes the operator-side workaround. Until then, the log-grep path IS the workaround.
+
+**If `email_for_magic_link` is NULL for Victor** (V013 seeds the subject row but leaves email blank — by design for the multi-user-eventual case): populate it once before the first magic-link request:
+```bash
+ssh root@46.247.109.91 "sudo -u postgres psql -d dietician -c \
+  \"UPDATE subjects SET email_for_magic_link = 'victor.vasiloi@gmail.com' WHERE subject_id = '00000000-0000-0000-0000-000000000001';\""
+# Expected: UPDATE 1.
+```
+
+Without this, `requestMagicLink` returns `knownSubject=false` (anti-enumeration uniform 202) and no token is issued.
 
 ---
 
