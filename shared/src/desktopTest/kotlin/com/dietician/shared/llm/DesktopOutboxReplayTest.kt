@@ -27,10 +27,22 @@ class DesktopOutboxReplayTest {
                 }
             val db = DieticianDatabase(driver)
             db.`0009_audit_pending_outboxQueries`.insertOutboxRow(
-                "kA", null, "h", 100L, 100L, 0L, "claudemax",
+                "kA",
+                null,
+                "h",
+                100L,
+                100L,
+                0L,
+                "claudemax",
             )
             db.`0009_audit_pending_outboxQueries`.insertOutboxRow(
-                "kB", null, "h", 200L, 200L, 0L, "claudemax",
+                "kB",
+                null,
+                "h",
+                200L,
+                200L,
+                0L,
+                "claudemax",
             )
 
             val commits = mutableListOf<String>()
