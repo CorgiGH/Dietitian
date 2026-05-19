@@ -120,6 +120,8 @@ interface Strings {
     val onboarding_resend_link_button: String
     val onboarding_success_label: String
     val onboarding_simulate_verify_button: String
+    val onboarding_token_label: String
+    val onboarding_verify_token_button: String
     val magic_link_verifying: String
     val magic_link_success: String
     val magic_link_back_to_sign_in: String
@@ -309,6 +311,8 @@ object Strings_en : Strings {
     override val onboarding_success_label: String = "Signed in."
     override val onboarding_simulate_verify_button: String =
         "Simulate verify (dev — backend offline)"
+    override val onboarding_token_label: String = "Paste sign-in token"
+    override val onboarding_verify_token_button: String = "Verify token"
     override val magic_link_verifying: String = "Verifying your magic link…"
     override val magic_link_success: String = "Signed in — taking you home."
     override val magic_link_back_to_sign_in: String = "Back to sign-in"
@@ -494,6 +498,8 @@ object Strings_ro : Strings {
     override val onboarding_success_label: String = "Conectat."
     override val onboarding_simulate_verify_button: String =
         "Simulează verificarea (dev — backend offline)"
+    override val onboarding_token_label: String = "Lipește tokenul de conectare"
+    override val onboarding_verify_token_button: String = "Verifică tokenul"
     override val magic_link_verifying: String = "Se verifică link-ul magic…"
     override val magic_link_success: String = "Conectat — te ducem acasă."
     override val magic_link_back_to_sign_in: String = "Înapoi la conectare"

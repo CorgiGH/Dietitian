@@ -43,6 +43,7 @@ import com.dietician.shared.ui.i18n.strings
 fun OnboardingScreen(actions: OnboardingActions) {
     val s = strings()
     var email by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf("") }
     var stage by remember { mutableStateOf<OnboardingStage>(OnboardingStage.EmailEntry) }
     var success by remember { mutableStateOf(false) }
 
@@ -90,10 +91,25 @@ fun OnboardingScreen(actions: OnboardingActions) {
                 ) {
                     Text(s.onboarding_resend_link_button)
                 }
-                // Dev affordance — manually fire the verify signal that the real
-                // WebSocket listener fires when the magic link is opened. Drives
-                // smoke walks without a deployed backend. Hidden once the real
-                // verify path lands (Plan-3 deploy + cross-device WS wiring).
+                // Real verify path for Desktop: no email client / deep-link
+                // handler, so the user pastes the magic-link token directly.
+                // `onVerifyToken` POSTs /auth/magic-link/verify → stores the
+                // server session that Coach 2PC + every authed call needs.
+                OutlinedTextField(
+                    value = token,
+                    onValueChange = { token = it },
+                    label = { Text(s.onboarding_token_label) },
+                    modifier = Modifier.testTag("onboarding-token-input"),
+                )
+                Button(
+                    onClick = { actions.onVerifyToken(token.trim()) },
+                    modifier = Modifier.testTag("onboarding-verify-token"),
+                ) {
+                    Text(s.onboarding_verify_token_button)
+                }
+                // Dev affordance — fakes the verify signal WITHOUT a server
+                // session. Kept for screen-walk smoke tests; do not use for a
+                // real login (Coach + authed routes will 401).
                 Button(
                     onClick = actions::onVerified,
                     modifier = Modifier.testTag("onboarding-simulate-verify"),
@@ -136,6 +152,14 @@ interface OnboardingActions {
 
     /** Invoked when WS [VerifyEvent.Verified] fires → screen surfaces success + caller navigates. */
     fun onVerified()
+
+    /**
+     * Invoked when the user pastes a magic-link token + taps Verify (Desktop —
+     * no deep-link handler). Host POSTs /auth/magic-link/verify; on success it
+     * stores the server session + drives the verified signal. Default no-ops so
+     * test fakes don't need to override.
+     */
+    fun onVerifyToken(token: String) {}
 
     /**
      * Binds the supplied callback to whatever signal the host uses (typically a

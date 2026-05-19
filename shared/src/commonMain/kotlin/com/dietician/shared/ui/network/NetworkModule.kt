@@ -10,6 +10,7 @@ import com.dietician.shared.ui.data.HttpRecipeIngestClient
 import com.dietician.shared.ui.data.PaperSearchRepository
 import com.dietician.shared.ui.data.ReceiptUploadRepository
 import com.dietician.shared.ui.data.RecipeIngestClient
+import com.dietician.shared.ui.auth.AuthRepository
 import io.ktor.client.HttpClient
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -50,4 +51,9 @@ val networkModule: Module = module {
     single<RecipeIngestClient> {
         HttpRecipeIngestClient(get(), get<BaseUrlProvider>().baseUrl)
     }
+
+    // iter-11 desktop-drill fix: real magic-link auth so the desktop client can
+    // obtain a server session (the onboarding "Simulate verify" only set a local
+    // onboarded flag — Coach 2PC then 401'd for lack of a real session cookie).
+    single { AuthRepository(get(), get<BaseUrlProvider>().baseUrl) }
 }

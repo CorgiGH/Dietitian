@@ -107,7 +107,13 @@ val uiModule: Module = module {
     single<RecipeReader> { StubRecipeReader() }
     single { SettingsPersistence() }
     single<SettingsStore> { PersistedSettingsStore(persistence = get()) }
-    single<OnboardingActions> { OnboardingActionsImpl(settingsStore = get()) }
+    single<OnboardingActions> {
+        OnboardingActionsImpl(
+            settingsStore = get(),
+            authRepository = getOrNull(),
+            scope = get(),
+        )
+    }
 
     // UI-side coroutine scope. We use Dispatchers.Default because kotlinx-coroutines
     // doesn't ship Dispatchers.Main for the Compose Desktop JVM (would need
