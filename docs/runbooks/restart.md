@@ -30,11 +30,17 @@
    ```
    If this returns 200 already, the previous reboot recovered the tmpfs from a snapshot — skip to step 8.
 
-5. **Mount tmpfs for keys** (idempotent — `mount` no-ops if already mounted):
+5. **Mount tmpfs for keys** (idempotent — `mount` no-ops if already mounted). Use `mode=0750` + `chown dietician:dietician` on the directory so the dietician systemd unit can traverse it to read `db.passphrase` (file stays 0600 dietician-only):
    ```bash
    sudo mkdir -p /run/dietician-keys
-   sudo mount -t tmpfs -o size=10m,mode=0700 tmpfs /run/dietician-keys
+   sudo mount -t tmpfs -o size=10m,mode=0750 tmpfs /run/dietician-keys
+   sudo chown dietician:dietician /run/dietician-keys
    ```
+   (Old runbook used `mode=0700` which locks the directory to root; the
+   dietician user then cannot reach the passphrase file inside even though
+   it owns the file. Council 1779188964 tracer-bullet first deploy
+   surfaced this 2026-05-19 — backend kept crashing with "tmpfs absent"
+   despite the file being present.)
 
 6. **Unlock + load the master key:**
    ```bash

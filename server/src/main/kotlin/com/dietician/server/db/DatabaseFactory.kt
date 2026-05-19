@@ -35,7 +35,12 @@ class DatabaseFactory(
 ) {
     constructor() : this(
         url = System.getenv("DIETICIAN_DB_URL") ?: "jdbc:postgresql://127.0.0.1:5432/dietician",
-        username = System.getenv("DIETICIAN_DB_USER") ?: "dietician_app",
+        // Default role is `dietician` — the role V013 leaves owning the DB.
+        // Plan-3 RC2's "separate limited app role" design intent (`dietician_app`)
+        // is documented in `RlsBypassPreventionTest` + HealthRoutesTest's test
+        // setup, but no production migration creates that role; defer until a
+        // V022+ migration ships CREATE ROLE dietician_app + GRANTs.
+        username = System.getenv("DIETICIAN_DB_USER") ?: "dietician",
         password = readPassword(),
     )
 

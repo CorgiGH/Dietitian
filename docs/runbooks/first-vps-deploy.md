@@ -61,13 +61,18 @@ Write the SAME passphrase to tmpfs so the backend can read it at startup:
 
 ```bash
 sudo mkdir -p /run/dietician-keys
-sudo mount -t tmpfs -o size=10m,mode=0700 tmpfs /run/dietician-keys
+# mode=0750 + chown dietician group so the dietician user can traverse the
+# directory to reach db.passphrase (which stays 0600 dietician-only).
+# `mode=0700` would lock the directory to root and the dietician systemd
+# unit would crash with "tmpfs absent" even though the file is present.
+sudo mount -t tmpfs -o size=10m,mode=0750 tmpfs /run/dietician-keys
+sudo chown dietician:dietician /run/dietician-keys
 echo -n '<paste-strong-passphrase>' | sudo tee /run/dietician-keys/db.passphrase > /dev/null
 sudo chmod 0600 /run/dietician-keys/db.passphrase
 sudo chown dietician:dietician /run/dietician-keys/db.passphrase
 ```
 
-(The tmpfs mount is wiped on reboot — `restart.md` covers re-mount + re-write on every restart.)
+(The tmpfs mount is wiped on reboot — `restart.md` covers re-mount + re-write on every restart, with the same mode=0750 + dietician owner so the service can read it post-restart.)
 
 ---
 
