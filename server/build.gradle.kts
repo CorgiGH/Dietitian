@@ -1,5 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
+import java.util.jar.JarFile
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
@@ -114,6 +116,37 @@ tasks.test {
 ktor {
     fatJar {
         archiveFileName.set("dietician-server.jar")
+    }
+}
+
+// Flyway 10's plugin SPI lives in `META-INF/services/org.flywaydb.core.extensibility.Plugin`.
+// `flyway-core` ships 22 plugin entries (incl. CoreResourceTypeProvider which registers
+// the V/R/U prefix types — without it every `V001__*.sql` is rejected as
+// "Unrecognised migration name format"). `flyway-database-postgresql` ships a 3-entry
+// file. The default Shadow merge is "last-wins-overwrite" which lets the smaller file
+// clobber the larger. Merging concatenates them so both contribute their entries.
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+    mergeServiceFiles()
+    // Belt+suspenders: if the merge regresses (anyone removes `mergeServiceFiles()`
+    // or Shadow changes default behaviour), the resulting JAR boots, finds zero
+    // migrations, and fails silently on first deploy — exactly the 2026-05-19
+    // followup-#16 outage. Verify the post-build JAR contains the load-bearing
+    // SPI entry so the regression is caught at build time, not deploy time.
+    doLast {
+        val jarFile = archiveFile.get().asFile
+        val required = "org.flywaydb.core.internal.resource.CoreResourceTypeProvider"
+        val servicesPath = "META-INF/services/org.flywaydb.core.extensibility.Plugin"
+        val merged =
+            JarFile(jarFile).use { jar ->
+                val entry = jar.getEntry(servicesPath)
+                    ?: error("shadowJar verification: $servicesPath missing from $jarFile")
+                jar.getInputStream(entry).bufferedReader().readText()
+            }
+        check(required in merged) {
+            "shadowJar verification: $servicesPath in $jarFile is missing $required " +
+                "(Shadow likely dropped mergeServiceFiles() — Flyway will reject all V*.sql " +
+                "as 'Unrecognised migration name format' at runtime). Content was:\n$merged"
+        }
     }
 }
 
