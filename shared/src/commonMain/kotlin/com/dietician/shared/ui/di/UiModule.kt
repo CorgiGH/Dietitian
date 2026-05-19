@@ -5,8 +5,9 @@ import com.dietician.shared.data.local.EventStore
 import com.dietician.shared.data.local.PantrySnapshotStore
 import com.dietician.shared.llm.AuditEntry
 import com.dietician.shared.llm.AuditLogSink
-import com.dietician.shared.llm.LlmChunk
-import com.dietician.shared.llm.LlmRequest
+import com.dietician.shared.llm.CoachLlmGateway
+import com.dietician.shared.llm.CoachLlmGatewayLlmStream
+import com.dietician.shared.llm.CoachLocale
 import com.dietician.shared.llm.LlmStream
 import com.dietician.shared.ui.auth.OnboardingActions
 import com.dietician.shared.ui.auth.OnboardingActionsImpl
@@ -35,8 +36,6 @@ import com.dietician.shared.ui.settings.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -86,7 +85,24 @@ val uiModule: Module = module {
     }
     single<PantryReader> { get<SqlDelightPantryStore>() }
     single<PantryWriter> { get<SqlDelightPantryStore>() }
-    single<LlmStream> { StubLlmStream() }
+    // iter-11: Coach is server-routed via a platform-keyed CoachLlmGateway —
+    // Desktop runs ClaudeMax CLI locally + 2PC reserve/commit bookend; Android
+    // is a thin SSE consumer of `/coach/stream`. CoachLlmGatewayLlmStream
+    // bridges the gateway into the existing LlmStream interface read by
+    // CoachChatViewModel. The locale provider maps `SettingsStore.locale` →
+    // CoachLocale so server-side prompt selection (EN/RO) matches UI.
+    single<LlmStream> {
+        CoachLlmGatewayLlmStream(
+            gateway = get<CoachLlmGateway>(),
+            localeProvider = {
+                if (get<SettingsStore>().state.value.locale.code == "ro") {
+                    CoachLocale.RO
+                } else {
+                    CoachLocale.EN
+                }
+            },
+        )
+    }
     single<AuditLogSink> { StubAuditLogSink() }
     single<RecipeReader> { StubRecipeReader() }
     single { SettingsPersistence() }
@@ -135,17 +151,6 @@ private class StubHomeLoader : HomeLoader {
 
     override suspend fun loadTodayNutrients(subjectId: String): TodayNutrientsState =
         TodayNutrientsState()
-}
-
-private class StubLlmStream : LlmStream {
-    override fun streamRoute(request: LlmRequest): Flow<LlmChunk> = flowOf(
-        LlmChunk(
-            text = "AI coach offline — Plan-2 router not wired into UI yet.",
-            tokenCount = 0,
-            isDone = true,
-            finalResponse = null,
-        ),
-    )
 }
 
 private class StubAuditLogSink : AuditLogSink {

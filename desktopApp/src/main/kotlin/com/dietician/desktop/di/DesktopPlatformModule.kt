@@ -56,12 +56,12 @@ val desktopPlatformModule: Module = module {
                             deviceClass = com.dietician.shared.llm.DeviceClass.VICTOR_DESKTOP,
                             capability = com.dietician.shared.llm.Capability.NON_STREAMING,
                             messages =
-                                listOf(
-                                    com.dietician.shared.llm.LlmMessage(
-                                        com.dietician.shared.llm.Role.USER,
-                                        prompt,
-                                    ),
+                            listOf(
+                                com.dietician.shared.llm.LlmMessage(
+                                    com.dietician.shared.llm.Role.USER,
+                                    prompt,
                                 ),
+                            ),
                         )
                     val resp = cli.call(request, model = "")
                     emit(
