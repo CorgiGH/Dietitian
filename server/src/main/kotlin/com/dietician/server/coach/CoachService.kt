@@ -103,9 +103,16 @@ class CoachService(
         request: CoachCommitRequest,
     ): CoachCommitResponse {
         val key = UUID.fromString(request.idempotencyKey)
-        val existing =
-            repo.findByIdempotencyKey(subjectId, key)
-                ?: error("commit before reserve: $key")
+        val existing = repo.findByIdempotencyKey(subjectId, key)
+        // gate-2 council fix: client outbox can carry an idempotency key for
+        // which reserve never landed (network drop between client-outbox-write
+        // and server-reserve-ACK). Replay-on-startup re-POSTs commit. Returning
+        // 200 status='not_reserved' lets the client drain the outbox without
+        // looping forever on a 500. The unknown key is naturally idempotent —
+        // nothing was reserved, nothing to refund.
+        if (existing == null) {
+            return CoachCommitResponse(auditId = key.toString(), status = "not_reserved")
+        }
         // gate-1 race fix: if the saga cron already orphaned the reservation
         // (status='orphaned') the budget was REFUNDED. A late client commit
         // claiming success would otherwise quietly overwrite the orphaned

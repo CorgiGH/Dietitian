@@ -45,14 +45,25 @@ class DesktopCoachLlmGateway(
                 attempts = 0L,
                 provider = "claudemax",
             )
-            http.reserve(
-                idempotencyKey = key,
-                prompt = prompt,
-                locale = locale.wire(),
-                provider = "claudemax",
-                estimatedCostCents = ESTIMATE_COST_CENTS,
-                reservationTtlSeconds = RESERVATION_TTL_SECONDS,
-            )
+            // gate-2 fix: if reserve fails (network drop, 5xx, over-budget),
+            // delete the outbox row inline so replay-on-startup doesn't loop
+            // forever against a key the server never saw. Counterpart server
+            // mitigation: /coach/commit returns 200 status='not_reserved' for
+            // unknown keys (CoachService.commit gate-2 branch).
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                http.reserve(
+                    idempotencyKey = key,
+                    prompt = prompt,
+                    locale = locale.wire(),
+                    provider = "claudemax",
+                    estimatedCostCents = ESTIMATE_COST_CENTS,
+                    reservationTtlSeconds = RESERVATION_TTL_SECONDS,
+                )
+            } catch (t: Throwable) {
+                db.`0009_audit_pending_outboxQueries`.markCommitted(key)
+                throw t
+            }
             val startMs = clock()
             var lastResponse: LlmResponse? = null
             var totalCompletionTokens = 0
