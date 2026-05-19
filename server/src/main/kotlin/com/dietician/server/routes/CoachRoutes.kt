@@ -20,8 +20,21 @@ import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import org.koin.ktor.ext.inject
+import kotlin.coroutines.coroutineContext
+
+private const val SSE_HEARTBEAT_MS = 25_000L
+private const val SSE_IDLE_TIMEOUT_MS = 90_000L
 
 /**
  * iter-11 — 2-phase commit Coach surface.
@@ -62,9 +75,34 @@ fun Application.installCoachRoutes() {
                 val req = call.receive<CoachStreamRequest>()
                 call.response.header(HttpHeaders.CacheControl, "no-cache")
                 call.respondTextWriter(contentType = ContentType.Text.EventStream) {
-                    coach.streamServerRouted(subjectId, req).collect { chunk ->
-                        write("data: $chunk\n\n")
-                        flush()
+                    val writeMutex = Mutex()
+                    val scope = CoroutineScope(coroutineContext)
+                    val heartbeat =
+                        scope.launch {
+                            while (isActive) {
+                                delay(SSE_HEARTBEAT_MS)
+                                writeMutex.withLock {
+                                    write(": heartbeat\n\n")
+                                    flush()
+                                }
+                            }
+                        }
+                    try {
+                        withTimeout(SSE_IDLE_TIMEOUT_MS) {
+                            coach.streamServerRouted(subjectId, req).collect { chunk ->
+                                writeMutex.withLock {
+                                    write("data: $chunk\n\n")
+                                    flush()
+                                }
+                            }
+                        }
+                    } catch (e: TimeoutCancellationException) {
+                        writeMutex.withLock {
+                            write("event: timeout\ndata: idle-timeout (${e.message})\n\n")
+                            flush()
+                        }
+                    } finally {
+                        heartbeat.cancel()
                     }
                 }
             }
