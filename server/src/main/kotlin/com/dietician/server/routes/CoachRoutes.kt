@@ -96,6 +96,14 @@ fun Application.installCoachRoutes() {
                                 }
                             }
                         }
+                        // gate-1 fix #4 — terminal SSE frame so the client can
+                        // distinguish "stream completed cleanly" from "socket
+                        // dropped mid-stream". Matches OpenAI Responses API
+                        // `response.completed` + Anthropic `message_stop` shape.
+                        writeMutex.withLock {
+                            write("event: end\ndata: ${req.idempotencyKey}\n\n")
+                            flush()
+                        }
                     } catch (e: TimeoutCancellationException) {
                         writeMutex.withLock {
                             write("event: timeout\ndata: idle-timeout (${e.message})\n\n")

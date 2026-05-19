@@ -106,6 +106,13 @@ class CoachService(
         val existing =
             repo.findByIdempotencyKey(subjectId, key)
                 ?: error("commit before reserve: $key")
+        // gate-1 race fix: if the saga cron already orphaned the reservation
+        // (status='orphaned') the budget was REFUNDED. A late client commit
+        // claiming success would otherwise quietly overwrite the orphaned
+        // terminal state while leaving the budget refund in place — provider
+        // got paid, budget shows refund, audit row says success. Refuse the
+        // overwrite and surface the orphaned state so the client can choose
+        // to re-reserve under a fresh idempotency key.
         if (existing.status != "pending") {
             return CoachCommitResponse(auditId = existing.auditId.toString(), status = existing.status)
         }
@@ -119,6 +126,16 @@ class CoachService(
             provider = request.provider,
             latencyMs = request.latencyMs,
             responseHash = request.responseHash,
+        )
+        // gate-1 fix #6 — reconcile budget delta: the reserve added
+        // estimatedCostCents; commit's costCents is the actual. Update
+        // llm_budget.cost_cents_used by (actual - estimate). Allows the
+        // ceiling to track real spend.
+        budgets.finalize(
+            subjectId = subjectId,
+            provider = request.provider,
+            actualTokens = request.completionTokens,
+            costCentsDelta = request.costCents - (existing.costCents ?: 0),
         )
         return CoachCommitResponse(auditId = existing.auditId.toString(), status = request.status)
     }
@@ -202,6 +219,10 @@ class CoachService(
 
     private companion object {
         const val DEFAULT_ESTIMATE_COST_CENTS = 5
-        const val DEFAULT_RESERVATION_TTL_SECONDS = 60
+
+        // gate-1 fix #3: TTL must exceed SSE idle-timeout (90s) so saga
+        // compensation cron never reclaims a reservation that's still mid-
+        // stream. 120s gives 30s headroom past the route's withTimeout.
+        const val DEFAULT_RESERVATION_TTL_SECONDS = 120
     }
 }

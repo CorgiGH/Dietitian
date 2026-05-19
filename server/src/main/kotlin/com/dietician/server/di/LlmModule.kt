@@ -70,16 +70,21 @@ val llmModule = module {
     }
     // iter-11: server-routed Coach Stream. Followup: replace with real
     // LlmRouterStream wiring once the StreamProviderCallable table is exposed
-    // by LlmRouterFactory. Noop today — Coach via Android currently returns
-    // an empty SSE body. Desktop Coach via ClaudeMax CLI is unaffected (the
-    // client-side DesktopCoachLlmGateway runs the subprocess locally per
-    // Phase B / council 1779208184 option 4).
+    // by LlmRouterFactory. Fail-loud today — gate-1 council flagged that a
+    // silent noop here would let every Android /coach/stream call land a
+    // falsified status=success audit row + drain budget. Throwing on first
+    // collect surfaces the missing wire as a 500 + journal log instead.
     single<com.dietician.shared.llm.LlmStream> {
         object : com.dietician.shared.llm.LlmStream {
             override fun streamRoute(
                 request: com.dietician.shared.llm.LlmRequest,
             ): kotlinx.coroutines.flow.Flow<com.dietician.shared.llm.LlmChunk> =
-                kotlinx.coroutines.flow.emptyFlow()
+                kotlinx.coroutines.flow.flow {
+                    error(
+                        "Coach LlmStream not wired in production llmModule " +
+                            "(followup: bind LlmRouterStream from :shared:llm provider table)",
+                    )
+                }
         }
     }
 }
@@ -105,10 +110,9 @@ val llmAdaptersOnlyModule = module {
     single<AuditLogSink> { AuditLogSinkAdapter(get()) }
     single<SubjectCredentialStore> { SubjectCredentialStoreImpl(get()) }
     single<PiiReviewQueue> { PiiReviewQueueImpl(get()) }
-    // iter-11 server-side Coach uses a no-op LlmStream when env keys are absent.
-    // Android + Desktop-fallback `/coach/stream` will emit zero data frames in
-    // this mode; desktop Coach via ClaudeMax CLI bypasses this binding entirely
-    // (Phase B DesktopCoachLlmGateway runs the subprocess locally).
+    // iter-11 server-side Coach uses an empty LlmStream when env keys are
+    // absent — test/dev only. Production binding (llmModule above) throws
+    // explicitly so a missing real wire fails loud, not silent.
     single<com.dietician.shared.llm.LlmStream> {
         object : com.dietician.shared.llm.LlmStream {
             override fun streamRoute(
