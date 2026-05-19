@@ -3,6 +3,8 @@ package com.dietician.android.di
 import android.content.Context
 import com.dietician.android.CameraXCapture
 import com.dietician.android.MediaStoreSaver
+import com.dietician.shared.data.DataModuleAndroid
+import com.dietician.shared.data.sql.DieticianDatabase
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -26,4 +28,5 @@ fun androidPlatformModule(applicationContext: Context): Module = module {
     single<Context> { applicationContext }
     single { CameraXCapture(get()) }
     single { MediaStoreSaver(get()) }
+    single<DieticianDatabase> { DataModuleAndroid.build(get()) }
 }

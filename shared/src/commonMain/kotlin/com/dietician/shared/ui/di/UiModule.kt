@@ -1,5 +1,8 @@
 package com.dietician.shared.ui.di
 
+import com.dietician.shared.data.deviceId
+import com.dietician.shared.data.local.EventStore
+import com.dietician.shared.data.local.PantrySnapshotStore
 import com.dietician.shared.llm.AuditEntry
 import com.dietician.shared.llm.AuditLogSink
 import com.dietician.shared.llm.LlmChunk
@@ -9,11 +12,11 @@ import com.dietician.shared.ui.auth.OnboardingActions
 import com.dietician.shared.ui.auth.OnboardingActionsImpl
 import com.dietician.shared.ui.components.PlannedCutController
 import com.dietician.shared.ui.components.TodayNutrientsState
-import com.dietician.shared.ui.data.InMemoryPantryStore
 import com.dietician.shared.ui.data.PantryReader
 import com.dietician.shared.ui.data.PantryWriter
 import com.dietician.shared.ui.data.Recipe
 import com.dietician.shared.ui.data.RecipeReader
+import com.dietician.shared.ui.data.SqlDelightPantryStore
 import com.dietician.shared.ui.data.saveExportedFile
 import com.dietician.shared.ui.screens.AuditLogViewModel
 import com.dietician.shared.ui.screens.CoachChatViewModel
@@ -68,11 +71,21 @@ import org.koin.dsl.module
 val uiModule: Module = module {
     // Stubs — replaced by real impls in future iterations / Plan-1/2/3 wires.
     single<HomeLoader> { StubHomeLoader() }
-    // Single in-memory store backs both reader + writer — pantry FAB writes land
-    // in the same flow the screen renders. Plan-1 SQLDelight pair swaps in here.
-    single { InMemoryPantryStore() }
-    single<PantryReader> { get<InMemoryPantryStore>() }
-    single<PantryWriter> { get<InMemoryPantryStore>() }
+    // Plan-1 SqlDelight-backed pantry — DieticianDatabase comes from the
+    // platform module (desktopPlatformModule or androidPlatformModule). The
+    // adapter encodes manually-typed display names into the SKU prefix so
+    // user-visible names survive a round-trip via pantry_snapshot.
+    single { PantrySnapshotStore(db = get()) }
+    single { EventStore(db = get(), json = kotlinx.serialization.json.Json) }
+    single {
+        SqlDelightPantryStore(
+            snapshot = get(),
+            events = get(),
+            deviceId = ::deviceId,
+        )
+    }
+    single<PantryReader> { get<SqlDelightPantryStore>() }
+    single<PantryWriter> { get<SqlDelightPantryStore>() }
     single<LlmStream> { StubLlmStream() }
     single<AuditLogSink> { StubAuditLogSink() }
     single<RecipeReader> { StubRecipeReader() }
