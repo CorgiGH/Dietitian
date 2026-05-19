@@ -84,7 +84,7 @@ class DesktopCoachLlmGateway(
         }
 
     private companion object {
-        const val ESTIMATE_COST_CENTS = 0  // ClaudeMax uses Max-20x subscription; OpenRouter passthrough cost = 0.
+        const val ESTIMATE_COST_CENTS = 0 // ClaudeMax uses Max-20x subscription; OpenRouter passthrough cost = 0.
         const val RESERVATION_TTL_SECONDS = 120
     }
 }
