@@ -200,6 +200,10 @@ class CoachService(
                             LlmMessage(Role.USER, request.prompt),
                         ),
                         systemPrompt = CoachSystemPrompts.forLocale(request.locale),
+                        // Coach replies are 1-3 paragraphs — the 4096 default is
+                        // wasteful and trips OpenRouter free-tier per-request
+                        // credit affordance ("requested 4096, can only afford N").
+                        maxOutputTokens = COACH_MAX_OUTPUT_TOKENS,
                     ),
                 ).collect { chunk ->
                     emit(chunk.text)
@@ -232,6 +236,11 @@ class CoachService(
 
     private companion object {
         const val DEFAULT_ESTIMATE_COST_CENTS = 5
+
+        // Coach turn output cap. Coach answers are short (meal swaps, macro
+        // math) — 1024 covers a thorough reply without the 4096 default that
+        // overshoots OpenRouter free-tier per-request credit affordance.
+        const val COACH_MAX_OUTPUT_TOKENS = 1024
 
         // gate-1 fix #3: TTL must exceed SSE idle-timeout (90s) so saga
         // compensation cron never reclaims a reservation that's still mid-
