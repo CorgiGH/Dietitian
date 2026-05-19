@@ -54,6 +54,19 @@ val dieticianModule = module {
     single { AuditRepository(get()) }
     single { HealthRepository(get()) }
 
+    // iter-11 Coach 2-phase commit
+    single { com.dietician.server.coach.CoachRepository(get()) }
+    single { com.dietician.shared.llm.PiiRedactor() }
+    single {
+        com.dietician.server.coach.CoachService(
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
+    single { com.dietician.server.cron.CoachOrphanCleanupCron(get()) }
+
     // ----- audit -----
     single { AuditLogWriter(get()) }
 

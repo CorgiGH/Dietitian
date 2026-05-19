@@ -68,6 +68,20 @@ val llmModule = module {
             auditLog = get(),
         )
     }
+    // iter-11: server-routed Coach Stream. Followup: replace with real
+    // LlmRouterStream wiring once the StreamProviderCallable table is exposed
+    // by LlmRouterFactory. Noop today — Coach via Android currently returns
+    // an empty SSE body. Desktop Coach via ClaudeMax CLI is unaffected (the
+    // client-side DesktopCoachLlmGateway runs the subprocess locally per
+    // Phase B / council 1779208184 option 4).
+    single<com.dietician.shared.llm.LlmStream> {
+        object : com.dietician.shared.llm.LlmStream {
+            override fun streamRoute(
+                request: com.dietician.shared.llm.LlmRequest,
+            ): kotlinx.coroutines.flow.Flow<com.dietician.shared.llm.LlmChunk> =
+                kotlinx.coroutines.flow.emptyFlow()
+        }
+    }
 }
 
 /**
@@ -91,4 +105,16 @@ val llmAdaptersOnlyModule = module {
     single<AuditLogSink> { AuditLogSinkAdapter(get()) }
     single<SubjectCredentialStore> { SubjectCredentialStoreImpl(get()) }
     single<PiiReviewQueue> { PiiReviewQueueImpl(get()) }
+    // iter-11 server-side Coach uses a no-op LlmStream when env keys are absent.
+    // Android + Desktop-fallback `/coach/stream` will emit zero data frames in
+    // this mode; desktop Coach via ClaudeMax CLI bypasses this binding entirely
+    // (Phase B DesktopCoachLlmGateway runs the subprocess locally).
+    single<com.dietician.shared.llm.LlmStream> {
+        object : com.dietician.shared.llm.LlmStream {
+            override fun streamRoute(
+                request: com.dietician.shared.llm.LlmRequest,
+            ): kotlinx.coroutines.flow.Flow<com.dietician.shared.llm.LlmChunk> =
+                kotlinx.coroutines.flow.emptyFlow()
+        }
+    }
 }

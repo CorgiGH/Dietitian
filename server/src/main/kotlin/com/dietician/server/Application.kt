@@ -10,6 +10,7 @@ import com.dietician.server.di.llmModule
 import com.dietician.server.observability.installObservability
 import com.dietician.server.routes.installAuditExportRoutes
 import com.dietician.server.routes.installAuthRoutes
+import com.dietician.server.routes.installCoachRoutes
 import com.dietician.server.routes.installEmbedRoutes
 import com.dietician.server.routes.installHealthRoutes
 import com.dietician.server.routes.installMeRoutes
@@ -48,6 +49,7 @@ import org.koin.logger.slf4jLogger
  * intentionally not pre-registered to avoid 200-on-empty-handler smoke
  * false-positives.
  */
+@Suppress("LongMethod")
 fun Application.module() {
     // Plan-2 Task 28: include the full LlmModule when env keys are present; otherwise fall
     // back to adapters-only so the server still boots in dev/test without LLM upstream.
@@ -128,6 +130,7 @@ fun Application.module() {
     installRedactRoutes()
     installAuditExportRoutes()
     installHealthRoutes()
+    installCoachRoutes()
 
     // [Plan-3 Task 33+35 + Council 1779120000 RC4] In-JVM cron scheduling.
     // Disable knob: `DIETICIAN_DISABLE_INJVM_CRONS=true` (see
@@ -139,5 +142,9 @@ fun Application.module() {
         val backup: BackupCron by inject()
         cron.schedule("audit-prune", { it.nextDayAtTime(4, 0) }) { prune.run() }
         cron.schedule("backup", { it.nextDayAtTime(4, 30) }) { backup.run() }
+        val coachOrphan: com.dietician.server.cron.CoachOrphanCleanupCron by inject()
+        cron.schedule("coach-orphan-cleanup", { it.plusSeconds(30) }) {
+            coachOrphan.runOnce()
+        }
     }
 }
