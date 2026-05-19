@@ -28,7 +28,8 @@
     "nutrient_dri_cache", "food_safety_temps_cache", "substitution_rules_cache",
     "cooking_methods_cache", "glycemic_index_cache", "recipes_cache",
     "stores_cache", "user_location_state_cache", "boredom_rolling_cache",
-    "meal_plans_cache", "shopping_lists_cache", "loss_leader_alerts_cache"
+    "meal_plans_cache", "shopping_lists_cache", "loss_leader_alerts_cache",
+    "audit_pending_outbox"
   ],
   "server_only_tables": [
     "sku_match_queue", "promo_observations", "model_price_table", "llm_calls",
