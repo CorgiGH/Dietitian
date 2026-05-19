@@ -1,0 +1,49 @@
+[Unit]
+Description=Dietician backend (Ktor)
+After=postgresql.service docker.service network-online.target
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=dietician
+Group=dietician
+WorkingDirectory=/opt/dietician
+EnvironmentFile=/etc/dietician/env
+
+# Heap cap matches server/build.gradle.kts applicationDefaultJvmArgs ceiling
+# (-Xmx512m). Production unit ships TIGHTER at -Xmx384m because Plan-3
+# integration tests proved 384m fits Flyway + Hikari + Ktor + 121 fixtures.
+# Council 1779188964 R1 (CRITICAL): JVM heap MUST be bounded — unbounded GC
+# spike on a VPS with an untouchable 4G Minecraft co-tenant would invite the
+# OOM-killer to score MC as fattest target.
+ExecStart=/usr/lib/jvm/java-21-openjdk-amd64/bin/java \
+    -Xms128m \
+    -Xmx384m \
+    -XX:+UseG1GC \
+    -XX:MaxGCPauseMillis=200 \
+    -Dfile.encoding=UTF-8 \
+    -jar /opt/dietician/lib/dietician-server.jar
+
+Restart=on-failure
+RestartSec=10s
+
+# cgroup-level memory cap. MemoryHigh=400M is the throttle threshold;
+# MemoryMax=512M is the hard kill ceiling. Together: backend gets gently
+# throttled before the kernel reaches for the OOM-killer.
+MemoryMax=512M
+MemoryHigh=400M
+
+# Council 1779188964 R1 (CRITICAL): explicit kill-priority bias AWAY from
+# the Minecraft co-tenant. MC runs with default OOMScoreAdjust=0; we set
+# dietician-backend to +500 so under memory pressure the kernel picks this
+# unit first. Range is [-1000, +1000]; +500 is a strong nudge without
+# guaranteeing first-kill in every edge case (+1000 would).
+OOMScoreAdjust=500
+
+SyslogIdentifier=dietician-backend
+StandardOutput=append:/opt/dietician/logs/backend.log
+StandardError=append:/opt/dietician/logs/backend.err
+
+[Install]
+WantedBy=multi-user.target
