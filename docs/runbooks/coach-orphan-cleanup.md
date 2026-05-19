@@ -44,6 +44,14 @@ A line `coach: orphaned N pending rows (saga compensation)` appears whenever the
 
 Server returns `200 status='not_reserved'` when a commit key has no matching reserve row (gate-2 council mitigation). Outbox replay sees `not_reserved` as terminal and drains the row. If `/coach/commit` ever returns 500 for an unknown key in production, the desktop outbox will grow monotonically — file an incident.
 
+## Outbox replay semantics (gate-3 mitigation)
+
+`DesktopOutboxReplay` re-POSTs `/coach/commit` with `status='aborted'` (not `'orphaned'`) — 'aborted' encodes the honest "client doesn't know whether the provider call completed before the crash." The server-side `CoachService.commit` only reconciles `llm_budget` on `status='success'`, so a desktop crash AFTER provider response landed but BEFORE commit ACK leaves the reservation estimate charged on `llm_budget.cost_cents_used`. The cron's `refund_orphaned` handles genuinely unbilled reservations via the `reserved_until` TTL — it never sees `aborted` rows.
+
+## Followup: real LlmRouterStream binding
+
+Iter-11 ships the server `LlmStream` Koin binding as a fail-loud noop (throws on first collect). Android `/coach/stream` consequently 500s in production. The Desktop ClaudeMax path bypasses this binding entirely. Real `LlmRouterStream` wiring from the `:shared:llm` `StreamProviderCallable` table is iter-11.5.
+
 ## Failure mode: budget refund under-decremented
 
 `refund_orphaned` joins `llm_budget` on `provider = COALESCE(audit_log.model, 'unknown')`. T1 contract: pending rows MUST write `model` = `llm_budget.provider` enum (`openrouter` / `anthropic` / `gemini` / `groq` / `claudemax`). A model-id like `claude-3-5-sonnet-20241022` would silently match zero `llm_budget` rows. Inspect:

@@ -134,16 +134,22 @@ class CoachService(
             latencyMs = request.latencyMs,
             responseHash = request.responseHash,
         )
-        // gate-1 fix #6 — reconcile budget delta: the reserve added
-        // estimatedCostCents; commit's costCents is the actual. Update
-        // llm_budget.cost_cents_used by (actual - estimate). Allows the
-        // ceiling to track real spend.
-        budgets.finalize(
-            subjectId = subjectId,
-            provider = request.provider,
-            actualTokens = request.completionTokens,
-            costCentsDelta = request.costCents - (existing.costCents ?: 0),
-        )
+        // gate-3 fix: only reconcile budget on success. For failed/aborted/
+        // orphaned the client doesn't know whether the provider actually billed
+        // (e.g. desktop crashed AFTER provider response landed but BEFORE the
+        // commit HTTP returned). Leaving the reservation estimate in place is
+        // the conservative choice — refund_orphaned cron handles genuinely
+        // unbilled reservations via the reserved_until TTL; non-success
+        // terminal states keep the estimate charged so we never refund a
+        // paid call. Gate-1 fix #6 reconcile still runs on success.
+        if (request.status == "success") {
+            budgets.finalize(
+                subjectId = subjectId,
+                provider = request.provider,
+                actualTokens = request.completionTokens,
+                costCentsDelta = request.costCents - (existing.costCents ?: 0),
+            )
+        }
         return CoachCommitResponse(auditId = existing.auditId.toString(), status = request.status)
     }
 

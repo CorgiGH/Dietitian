@@ -22,9 +22,17 @@ class DesktopOutboxReplay(
         log.info("DesktopOutboxReplay: {} pending row(s) to reconcile", rows.size)
         rows.forEach { row ->
             runCatching {
+                // gate-3 fix: send status='aborted' (not 'orphaned'). 'aborted'
+                // is the semantically honest state for "desktop client doesn't
+                // know whether the provider call completed before the crash."
+                // Server-side commit no longer touches budget for non-success
+                // statuses (CoachService.commit gate-3 branch), so a paid-but-
+                // uncommitted call won't get its budget refunded by the client.
+                // The refund_orphaned cron still handles genuinely-unbilled
+                // reservations via reserved_until TTL.
                 http.commit(
                     idempotencyKey = row.idempotency_key,
-                    status = "orphaned",
+                    status = "aborted",
                     promptTokens = 0,
                     completionTokens = 0,
                     costCents = 0,
