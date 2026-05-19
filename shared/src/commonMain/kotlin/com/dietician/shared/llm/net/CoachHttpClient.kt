@@ -73,8 +73,12 @@ class CoachHttpClient(
                 contentType(ContentType.Application.Json)
                 setBody(
                     ReserveBody(
-                        idempotencyKey, prompt, locale, provider,
-                        estimatedCostCents, reservationTtlSeconds,
+                        idempotencyKey,
+                        prompt,
+                        locale,
+                        provider,
+                        estimatedCostCents,
+                        reservationTtlSeconds,
                     ),
                 )
             }
@@ -97,8 +101,14 @@ class CoachHttpClient(
                 contentType(ContentType.Application.Json)
                 setBody(
                     CommitBody(
-                        idempotencyKey, status, promptTokens, completionTokens,
-                        costCents, provider, latencyMs, responseHash,
+                        idempotencyKey,
+                        status,
+                        promptTokens,
+                        completionTokens,
+                        costCents,
+                        provider,
+                        latencyMs,
+                        responseHash,
                     ),
                 )
             }
