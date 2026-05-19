@@ -9,6 +9,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.dietician.shared.ui.data.RecipeReader
 import com.dietician.shared.ui.screens.AuditLogScreen
 import com.dietician.shared.ui.screens.AuditLogViewModel
 import com.dietician.shared.ui.screens.CoachChatScreen
@@ -19,6 +20,7 @@ import com.dietician.shared.ui.screens.FoodLogScreen
 import com.dietician.shared.ui.screens.FoodLogViewModel
 import com.dietician.shared.ui.screens.HomeScreen
 import com.dietician.shared.ui.screens.HomeViewModel
+import com.dietician.shared.ui.screens.MealDetailScreen
 import com.dietician.shared.ui.screens.PantryScreen
 import com.dietician.shared.ui.screens.PantryViewModel
 import com.dietician.shared.ui.screens.PaperSearchScreen
@@ -101,7 +103,11 @@ sealed class DieticianScreen : Screen {
         @Composable
         override fun Content() {
             val viewModel = koinInject<CookbookViewModel>()
-            CookbookScreen(viewModel = viewModel)
+            val navigator = LocalNavigator.currentOrThrow
+            CookbookScreen(
+                viewModel = viewModel,
+                onRecipeTap = { recipeId -> navigator.push(MealDetail(recipeId)) },
+            )
         }
     }
 
@@ -174,7 +180,8 @@ sealed class DieticianScreen : Screen {
 
         @Composable
         override fun Content() {
-            PlaceholderScreen("Meal detail: $mealId", key)
+            val reader = koinInject<RecipeReader>()
+            MealDetailScreen(recipeId = mealId, reader = reader)
         }
     }
 }

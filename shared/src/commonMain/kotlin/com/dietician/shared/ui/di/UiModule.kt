@@ -139,6 +139,32 @@ private class StubAuditLogSink : AuditLogSink {
     }
 }
 
+/**
+ * Seeded reader so Cookbook is browsable end-to-end without a deployed Plan-7
+ * corpus. Three plausible recipes covering Victor's pantry-friendly meals.
+ * Replace with Plan-1 `RecipeStore.all` + Plan-7 corpus reader once those wire in.
+ */
 private class StubRecipeReader : RecipeReader {
-    override suspend fun all(): List<Recipe> = emptyList()
+    override suspend fun all(): List<Recipe> = SeedRecipes
 }
+
+private val SeedRecipes: List<Recipe> = listOf(
+    Recipe(
+        id = "seed-chicken-rice-broccoli",
+        title = "Chicken + rice + broccoli",
+        ingredientsCsv = "Chicken breast 200g,Rice 80g,Broccoli 200g,Olive oil 10ml",
+        servings = 1,
+    ),
+    Recipe(
+        id = "seed-oatmeal-banana",
+        title = "Oatmeal + banana + peanut butter",
+        ingredientsCsv = "Rolled oats 80g,Banana 1pc,Peanut butter 20g,Milk 200ml",
+        servings = 1,
+    ),
+    Recipe(
+        id = "seed-ciorba-de-vacuta",
+        title = "Ciorbă de văcuță (RO)",
+        ingredientsCsv = "Beef shank 300g,Carrot 100g,Onion 50g,Borș 200ml,Parsley 5g",
+        servings = 2,
+    ),
+)
