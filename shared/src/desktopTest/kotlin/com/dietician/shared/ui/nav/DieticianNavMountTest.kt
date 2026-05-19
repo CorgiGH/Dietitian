@@ -51,6 +51,17 @@ class DieticianNavMountTest {
                 single(createdAtStart = true) { InMemoryPantryStore() }
                 single<PantryReader>(createdAtStart = true) { get<InMemoryPantryStore>() }
                 single<PantryWriter>(createdAtStart = true) { get<InMemoryPantryStore>() }
+                // iter-11: tests skip the platform module, so provide a noop
+                // CoachLlmGateway so CoachLlmGatewayLlmStream resolves.
+                single<com.dietician.shared.llm.CoachLlmGateway> {
+                    object : com.dietician.shared.llm.CoachLlmGateway {
+                        override fun streamCoachTurn(
+                            prompt: String,
+                            locale: com.dietician.shared.llm.CoachLocale,
+                        ): kotlinx.coroutines.flow.Flow<com.dietician.shared.llm.LlmChunk> =
+                            kotlinx.coroutines.flow.emptyFlow()
+                    }
+                }
             }
             startKoin { modules(networkModule, uiModule, testOverride) }
         }

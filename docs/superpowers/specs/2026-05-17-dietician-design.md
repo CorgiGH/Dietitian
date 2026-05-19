@@ -1038,6 +1038,16 @@ Hardcoded into LLM router pre-prompt:
 - Fasts >36h non-medical recommendation
 - Pre-2018 T-Nation legacy
 
+### 7.7 iter-11 amendment — Coach routing + 2PC audit (2026-05-19, council 1779208184)
+
+Coach text routing splits along the platform axis:
+
+- **Desktop client** routes ClaudeMax CLI subprocess locally (uses Max-20x credit) bookended by `POST /coach/reserve` + `POST /coach/commit` against the server. Server inserts a pending `audit_log` row (`status='pending'`) at reserve time and updates it at commit time — Art 13 disclosure is recorded BEFORE the LLM call returns. The 60s saga-compensation cron (`refund_orphaned`, V022) flips never-committed rows to `orphaned` while refunding the budget reservation (Stripe-shaped auth-hold + capture). Reservation TTL is 120 s, > the 90 s SSE idle-timeout, so the saga never reclaims a still-streaming reservation.
+- **Android client** and **Desktop-non-ClaudeMax fallback** route through `POST /coach/stream` SSE. Server pairs reserve + LlmRouter + commit in one coroutine. 25 s heartbeat + 90 s idle-timeout on the SSE response avoid ktor-cio proxy buffering. A terminal `event: end` frame signals clean completion. **Status (iter-11):** SSE route + 2PC plumbing are live; the server-side `LlmStream` binding is a fail-loud noop pending the real `LlmRouterStream` wire from the `:shared:llm` provider table — Android Coach surfaces a 500 with "not wired" until that lands (iter-11.5). Desktop ClaudeMax path is unaffected and ships activated.
+- ClaudeMax CLI participates only in the Desktop Coach text path. Server-side `LlmRouter` chain for Coach is OpenRouter → Groq fallback; ClaudeMax remains in the Vision OCR chain unchanged.
+
+`audit_log.status` state machine: `pending → success | failed | aborted | orphaned`. The `orphaned` value is set exclusively by the saga compensation cron when a `pending` row exceeds its `reserved_until` deadline. Clients implement an `audit_pending_outbox` table (SQLDelight, client-side) so that desktop crashes between reserve and commit replay the commit on next startup; `/coach/commit` returns `200 status='not_reserved'` for unknown keys so orphan outbox rows can drain without infinite-retry loops.
+
 ---
 
 ## 8. Vision OCR flows

@@ -68,6 +68,25 @@ val llmModule = module {
             auditLog = get(),
         )
     }
+    // iter-11: server-routed Coach Stream. Followup: replace with real
+    // LlmRouterStream wiring once the StreamProviderCallable table is exposed
+    // by LlmRouterFactory. Fail-loud today — gate-1 council flagged that a
+    // silent noop here would let every Android /coach/stream call land a
+    // falsified status=success audit row + drain budget. Throwing on first
+    // collect surfaces the missing wire as a 500 + journal log instead.
+    single<com.dietician.shared.llm.LlmStream> {
+        object : com.dietician.shared.llm.LlmStream {
+            override fun streamRoute(
+                request: com.dietician.shared.llm.LlmRequest,
+            ): kotlinx.coroutines.flow.Flow<com.dietician.shared.llm.LlmChunk> =
+                kotlinx.coroutines.flow.flow {
+                    error(
+                        "Coach LlmStream not wired in production llmModule " +
+                            "(followup: bind LlmRouterStream from :shared:llm provider table)",
+                    )
+                }
+        }
+    }
 }
 
 /**
@@ -91,4 +110,15 @@ val llmAdaptersOnlyModule = module {
     single<AuditLogSink> { AuditLogSinkAdapter(get()) }
     single<SubjectCredentialStore> { SubjectCredentialStoreImpl(get()) }
     single<PiiReviewQueue> { PiiReviewQueueImpl(get()) }
+    // iter-11 server-side Coach uses an empty LlmStream when env keys are
+    // absent — test/dev only. Production binding (llmModule above) throws
+    // explicitly so a missing real wire fails loud, not silent.
+    single<com.dietician.shared.llm.LlmStream> {
+        object : com.dietician.shared.llm.LlmStream {
+            override fun streamRoute(
+                request: com.dietician.shared.llm.LlmRequest,
+            ): kotlinx.coroutines.flow.Flow<com.dietician.shared.llm.LlmChunk> =
+                kotlinx.coroutines.flow.emptyFlow()
+        }
+    }
 }
