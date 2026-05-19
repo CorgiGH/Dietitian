@@ -40,10 +40,16 @@ fun runMigrations(
         Flyway.configure(FlywayClassloaderAnchor::class.java.classLoader)
             .dataSource(jdbcUrl, user, password)
             .baselineOnMigrate(false)
+    // Flyway 10.20.x rejects MIXED locations when one resolves to zero
+    // migrations (the classpath: scan returns empty on Ktor fat-JARs even
+    // with the temp-extract workaround active). Use exactly one location
+    // per invocation:
+    //   - fat-JAR  → filesystem: only (the temp dir we just populated)
+    //   - tests / `:server:run` → classpath: only (Gradle classpath layout)
     val configured =
         if (tempDir != null) {
-            log.info("Flyway: scanning {} (extracted from JAR) + classpath:db/migration", tempDir.absolutePath)
-            builder.locations("filesystem:${tempDir.absolutePath}", "classpath:db/migration")
+            log.info("Flyway: scanning {} (extracted from JAR)", tempDir.absolutePath)
+            builder.locations("filesystem:${tempDir.absolutePath}")
         } else {
             log.info("Flyway: not running from a JAR — using classpath:db/migration only")
             builder.locations("classpath:db/migration")
