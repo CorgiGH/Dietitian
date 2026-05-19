@@ -86,6 +86,31 @@ class CoachService(
         )
     }
 
+    fun commit(
+        subjectId: UUID,
+        request: CoachCommitRequest,
+    ): CoachCommitResponse {
+        val key = UUID.fromString(request.idempotencyKey)
+        val existing =
+            repo.findByIdempotencyKey(subjectId, key)
+                ?: error("commit before reserve: $key")
+        if (existing.status != "pending") {
+            return CoachCommitResponse(auditId = existing.auditId.toString(), status = existing.status)
+        }
+        repo.updateAuditOnCommit(
+            subjectId = subjectId,
+            idempotencyKey = key,
+            status = request.status,
+            promptTokens = request.promptTokens,
+            completionTokens = request.completionTokens,
+            costCents = request.costCents,
+            provider = request.provider,
+            latencyMs = request.latencyMs,
+            responseHash = request.responseHash,
+        )
+        return CoachCommitResponse(auditId = existing.auditId.toString(), status = request.status)
+    }
+
     private fun sha256(s: String): String =
         MessageDigest.getInstance("SHA-256").digest(s.toByteArray())
             .joinToString("") { "%02x".format(it) }
