@@ -40,15 +40,28 @@ object WalPragmas {
         driver: SqlDriver,
         sql: String,
     ) {
-        driver.executeQuery(
-            identifier = null,
-            sql = sql,
-            mapper = { cursor ->
-                // Drain any rows the PRAGMA emits so the statement releases cleanly.
-                while (cursor.next().value) { /* discard */ }
-                QueryResult.Unit
-            },
-            parameters = 0,
-        )
+        // Driver asymmetry: the Android SQLite driver's `execute` path throws on
+        // row-yielding PRAGMAs ("Queries can be performed using ... query ...
+        // only"), so executeQuery is needed there. The desktop xerial JDBC
+        // driver does the opposite — `executeQuery` on a SET-style PRAGMA that
+        // yields NO ResultSet (e.g. `synchronous=NORMAL`, `foreign_keys=ON`)
+        // throws `SQLException: Query does not return results`. Try the
+        // query path first (covers Android + row-yielding pragmas), fall back
+        // to `execute` for the no-result desktop case.
+        @Suppress("TooGenericExceptionCaught", "SwallowedException")
+        try {
+            driver.executeQuery(
+                identifier = null,
+                sql = sql,
+                mapper = { cursor ->
+                    // Drain any rows the PRAGMA emits so the statement releases cleanly.
+                    while (cursor.next().value) { /* discard */ }
+                    QueryResult.Unit
+                },
+                parameters = 0,
+            )
+        } catch (e: Exception) {
+            driver.execute(identifier = null, sql = sql, parameters = 0)
+        }
     }
 }
