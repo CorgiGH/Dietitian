@@ -10,7 +10,7 @@ appends to BRIDGE): shipped items move to `## Done` with their PR number, new ga
 added, the header below is refreshed.
 
 - **Last updated:** 2026-05-20
-- **master HEAD at last update:** `f8dc224` (PR #28 merged). PR #29 open — ClaudeMax rewrite + this backlog + the doc-process wiring (CI re-runs on each push, code last green at `e07b959`).
+- **master HEAD at last update:** `8e8f88c` (PR #29 merged — ClaudeMax CLI provider rewrite + the canonical `docs/backlog.md` + doc-process wiring).
 - **Binding spec:** `docs/superpowers/specs/2026-05-17-dietician-design.md`
 - **Session handoff:** `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/BRIDGE.md`
 
@@ -28,9 +28,8 @@ Scaffold; Plan-1 event-sourced data ledger + sync; Plan-2 `:shared:llm` LLM rout
 
 | Item | Status | Note |
 |---|---|---|
-| Merge PR #29 | READY | CI green |
 | Client SQLDelight migration runner | NOT STARTED | the `.schema_applied` marker skips new tables (e.g. `0009_audit_pending_outbox`) on an existing client DB → silent data gaps after a schema bump |
-| systemd auto-restart for the backend | PARTIAL | no restart-on-crash → backend stays down if it dies |
+| systemd auto-restart for the backend | FIX DEPLOYED — PR #30 | backlog was wrong: `Restart=on-failure` has shipped since PR #22. Real gap was the unreachable crash-loop limiter (`RestartSec=10s` vs the default `StartLimitIntervalSec=10s` window). Explicit `StartLimitIntervalSec=300` deployed + verified on the VPS |
 | Backend in-memory stores → Postgres (Plan-3.5) | PARTIAL | `SessionStore` / `MagicLinkService` / `RateLimiter` are `ConcurrentHashMap` → a backend restart logs Victor out and drops sessions |
 
 ## P1 — core features incomplete
