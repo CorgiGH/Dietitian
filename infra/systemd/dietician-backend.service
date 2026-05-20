@@ -4,6 +4,16 @@ After=postgresql.service docker.service network-online.target
 Wants=network-online.target
 Requires=postgresql.service
 
+# Crash-loop cap. RestartSec=10s (see [Service]) spaces restarts 10s apart,
+# so systemd's default StartLimitIntervalSec=10s window can never accumulate
+# StartLimitBurst=5 starts — the default rate limiter is unreachable and a
+# crash-loop would restart every 10s forever. Widen the window to 300s so
+# 5 crashes within 5 min trip the limiter and the unit enters `failed`
+# instead of churning memory next to the untouchable 4G Minecraft co-tenant.
+# Council 1779303481.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
 [Service]
 Type=simple
 User=dietician
