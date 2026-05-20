@@ -44,12 +44,17 @@ object SchemaInvariant {
     /**
      * All non-internal user tables currently present in the SQLite file — a
      * point-in-time snapshot. The [driver] must be open.
+     *
+     * Two categories of platform tables are excluded:
+     * - `sqlite_%` — SQLite-internal tables (`sqlite_sequence`, `sqlite_stat1`, etc.).
+     * - `android_metadata` — created by Android's `SQLiteOpenHelper` to store the DB
+     *   locale; it is a platform artifact, not an app table, and is absent on desktop.
      */
     fun liveTables(driver: SqlDriver): Set<String> {
         val names = mutableSetOf<String>()
         driver.executeQuery(
             identifier = null,
-            sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name != 'android_metadata'",
             mapper = { cursor ->
                 while (cursor.next().value) {
                     cursor.getString(0)?.let { names.add(it) }

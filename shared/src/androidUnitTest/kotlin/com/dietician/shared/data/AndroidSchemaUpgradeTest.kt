@@ -13,17 +13,19 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.SQLiteMode
-import kotlin.test.assertTrue
 
 /**
  * Verifies that reopening an Android SQLite DB stamped at user_version 1 with
  * [DieticianDatabase.Schema] (version 2) causes [AndroidSqliteDriver] to fire
- * `onUpgrade(1, 2)` → `Schema.migrate` → the `1.sqm` DDL, creating
- * `audit_pending_outbox`.
+ * `onUpgrade(1, 2)` → `Schema.migrate` → the `1.sqm` DDL, and that the
+ * resulting schema exactly matches the full 29-table v2 schema.
  *
- * This is a regression/characterisation test — `1.sqm` and the Android driver
- * are already in place, so the test MUST pass on the first write. A failure
- * means an [AndroidSqliteDriver] wiring problem.
+ * The v1 seed is faithful: it creates the real v2 schema then drops the one
+ * table (`audit_pending_outbox`) and its index that v1 never had, leaving
+ * exactly the 28-table production v1 state. This mirrors [DesktopSchemaMigratorTest.createV1Database].
+ *
+ * A failure here means either [AndroidSqliteDriver] wiring is broken OR
+ * `1.sqm` does not converge a real 28-table v1 database to the full v2 schema.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
@@ -31,23 +33,26 @@ import kotlin.test.assertTrue
 class AndroidSchemaUpgradeTest {
 
     /**
-     * A stand-in version-1 schema.
+     * A faithful representation of the production v1 schema (28 tables).
      *
-     * `create` writes one real table so that the open-helper has something to
-     * operate on and reliably stamps `user_version = 1`.  An empty `create`
-     * risks the helper skipping the version stamp on some Robolectric builds.
+     * `create` materialises the real v1 state by running the full v2 schema
+     * creation and then dropping the one table and its index that v1 never had
+     * (`audit_pending_outbox` / `idx_audit_pending_outbox_started`). This
+     * mirrors [DesktopSchemaMigratorTest.createV1Database] and ensures the
+     * Android upgrade test exercises the migration against a real v1 database,
+     * not a synthetic single-table fake.
+     *
+     * [AndroidSqliteDriver] stamps `user_version = 1` (the schema's [version])
+     * after `create` returns, so the reopen at version 2 fires `onUpgrade(1, 2)`.
      */
     private val v1Schema =
         object : SqlSchema<QueryResult.Value<Unit>> {
             override val version: Long = 1L
 
             override fun create(driver: SqlDriver): QueryResult.Value<Unit> {
-                // A minimal sentinel table so SQLiteOpenHelper records version 1.
-                driver.execute(
-                    identifier = null,
-                    sql = "CREATE TABLE IF NOT EXISTS _v1_sentinel (id INTEGER PRIMARY KEY)",
-                    parameters = 0,
-                )
+                DieticianDatabase.Schema.create(driver)
+                driver.execute(null, "DROP INDEX idx_audit_pending_outbox_started", 0)
+                driver.execute(null, "DROP TABLE audit_pending_outbox", 0)
                 return QueryResult.Unit
             }
 
@@ -59,28 +64,6 @@ class AndroidSchemaUpgradeTest {
             ): QueryResult.Value<Unit> = QueryResult.Unit
         }
 
-    /**
-     * Returns true if [name] exists as a table in sqlite_master.
-     *
-     * Uses the real SQLDelight 2.0.2 `executeQuery` signature:
-     * `executeQuery(identifier, sql, mapper, parameters) { /* binders */ }`
-     */
-    private fun tableExists(driver: SqlDriver, name: String): Boolean {
-        var found = false
-        driver.executeQuery(
-            identifier = null,
-            sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            mapper = { cursor ->
-                found = cursor.next().value
-                QueryResult.Unit
-            },
-            parameters = 1,
-        ) {
-            bindString(0, name)
-        }
-        return found
-    }
-
     @Before
     fun deleteStaleDatabaseIfPresent() {
         ApplicationProvider.getApplicationContext<android.content.Context>()
@@ -88,10 +71,10 @@ class AndroidSchemaUpgradeTest {
     }
 
     @Test
-    fun upgradingFromV1RunsTheMigrationAndAddsAuditPendingOutbox() {
+    fun upgradingFromV1RunsTheMigrationAndConvergesToFullV2Schema() {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
 
-        // First open at version 1 — creates the sentinel table and stamps user_version=1.
+        // First open at version 1 — materialises the real 28-table v1 schema and stamps user_version=1.
         AndroidSqliteDriver(schema = v1Schema, context = ctx, name = "upgrade-test.db").close()
 
         // Reopen with the real schema (version 2).
@@ -102,12 +85,12 @@ class AndroidSchemaUpgradeTest {
             name = "upgrade-test.db",
         )
 
-        // This query is the first DB access — it forces AndroidSqliteDriver to open
-        // the file, which runs onUpgrade(1, 2) -> Schema.migrate -> 1.sqm.
-        assertTrue(
-            tableExists(driver, "audit_pending_outbox"),
-            "audit_pending_outbox must exist after upgrading from v1 to v2 via 1.sqm",
-        )
+        // assertExpectedTables throws IllegalStateException if any of the 29 expected v2 tables
+        // is missing OR any unexpected table is present. A clean return proves:
+        //   (a) audit_pending_outbox was added by 1.sqm, AND
+        //   (b) nothing else drifted — the upgrade fully converged the 28-table v1 to the
+        //       exact 29-table v2 set defined in SchemaInvariant.EXPECTED_TABLES.
+        SchemaInvariant.assertExpectedTables(driver)
 
         driver.close()
     }
