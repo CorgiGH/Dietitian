@@ -1,7 +1,13 @@
 # Dietician — Production Backlog
 
-**Living doc.** The single source of "what is left to reach a production-level app."
-Update it when items land, when new gaps surface, and at every `/wrap`.
+**Living doc — the sole authority for what is left and in what priority.** `BRIDGE.md`
+is the chronological per-session handoff and points here; it does NOT restate the P0
+list. The spec owns *what the product must do*. If BRIDGE and this file ever disagree
+on what is done or what is next, **this file wins** — fix BRIDGE.
+
+Kept current at `/wrap` (the `/wrap` command reconciles this file in the same step it
+appends to BRIDGE): shipped items move to `## Done` with their PR number, new gaps get
+added, the header below is refreshed.
 
 - **Last updated:** 2026-05-20
 - **master HEAD at last update:** `f8dc224` (PR #28 merged); PR #29 open + CI-green.

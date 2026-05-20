@@ -22,3 +22,15 @@ Required fields (gather facts via tool calls before writing — do not hallucina
 Format mirror Section "## YYYY-MM-DDTHH:MM → next session" block already in BRIDGE.md from the prior session. Append after the last `---` separator at the bottom, with an updated heading.
 
 After writing, also prepend a 1-line entry to the `## Index (newest first)` section at the top of BRIDGE.md.
+
+## Also reconcile `docs/backlog.md` (REQUIRED — same step as the BRIDGE write)
+
+`docs/backlog.md` is the canonical production backlog. `/wrap` is the single enforced point where it is kept current — do this every time, in the same commit/turn as the BRIDGE update:
+
+1. **Move shipped items to `## Done`** — for anything that landed this session (cite the PR number). Do not delete; archive under Done.
+2. **Add new gaps** — anything this session surfaced, under the right priority bucket (`P0`/`P1`/`P2`/`P3`) with a status tag (`NOT STARTED` / `PARTIAL` / `STUB` / `FOLLOWUP` / `DEFERRED`).
+3. **Re-tag changed items** — update the status of anything that moved (e.g. `NOT STARTED` → `PARTIAL`).
+4. **Refresh the header** — `Last updated:` to today's date, `master HEAD at last update:` to the current `git -C "C:/Users/User/Desktop/Dietician" rev-parse --short origin/master`.
+5. **Do not duplicate priority into BRIDGE** — the BRIDGE `hot work` field should reference `docs/backlog.md` ("see `docs/backlog.md` P0") rather than restating the full list. The backlog wins on priority; BRIDGE is the chronological log.
+
+If the backlog and BRIDGE disagree on what is done or what is next, the backlog is authoritative — fix BRIDGE, not the backlog.
