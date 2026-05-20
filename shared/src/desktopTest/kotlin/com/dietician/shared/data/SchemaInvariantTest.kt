@@ -14,6 +14,8 @@ class SchemaInvariantTest {
         assertEquals(2L, DieticianDatabase.Schema.version)
     }
 
+    // Guards EXPECTED_TABLES itself: catches a simultaneous add to both EXPECTED_TABLES
+    // and the schema, which the set-equality test below would not flag.
     @Test
     fun expectedTablesHasTwentyNineEntries() {
         assertEquals(29, SchemaInvariant.EXPECTED_TABLES.size)
@@ -21,26 +23,29 @@ class SchemaInvariantTest {
 
     @Test
     fun freshCreateProducesExactlyExpectedTables() {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        DieticianDatabase.Schema.create(driver)
-        assertEquals(SchemaInvariant.EXPECTED_TABLES, SchemaInvariant.liveTables(driver))
+        JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).use { driver ->
+            DieticianDatabase.Schema.create(driver)
+            assertEquals(SchemaInvariant.EXPECTED_TABLES, SchemaInvariant.liveTables(driver))
+        }
     }
 
     @Test
     fun assertExpectedTablesPassesOnFullSchema() {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        DieticianDatabase.Schema.create(driver)
-        SchemaInvariant.assertExpectedTables(driver) // does not throw
+        JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).use { driver ->
+            DieticianDatabase.Schema.create(driver)
+            SchemaInvariant.assertExpectedTables(driver) // does not throw
+        }
     }
 
     @Test
     fun assertExpectedTablesThrowsWhenATableIsMissing() {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        DieticianDatabase.Schema.create(driver)
-        driver.execute(null, "DROP TABLE audit_pending_outbox", 0)
-        val ex = assertFailsWith<IllegalStateException> {
-            SchemaInvariant.assertExpectedTables(driver)
+        JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).use { driver ->
+            DieticianDatabase.Schema.create(driver)
+            driver.execute(null, "DROP TABLE audit_pending_outbox", 0)
+            val ex = assertFailsWith<IllegalStateException> {
+                SchemaInvariant.assertExpectedTables(driver)
+            }
+            assertTrue(ex.message!!.contains("audit_pending_outbox"))
         }
-        assertTrue(ex.message!!.contains("audit_pending_outbox"))
     }
 }

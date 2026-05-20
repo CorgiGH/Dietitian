@@ -41,7 +41,10 @@ object SchemaInvariant {
             "audit_pending_outbox",
         )
 
-    /** All non-internal user tables currently present in the SQLite file. */
+    /**
+     * All non-internal user tables currently present in the SQLite file — a
+     * point-in-time snapshot. The [driver] must be open.
+     */
     fun liveTables(driver: SqlDriver): Set<String> {
         val names = mutableSetOf<String>()
         driver.executeQuery(
@@ -58,7 +61,12 @@ object SchemaInvariant {
         return names
     }
 
-    /** Throws IllegalStateException if the live table set is not exactly EXPECTED_TABLES. */
+    /**
+     * Asserts the live SQLite table set is exactly [EXPECTED_TABLES].
+     *
+     * @param driver an open driver for the database to check.
+     * @throws IllegalStateException if any expected table is missing or any unexpected table is present.
+     */
     fun assertExpectedTables(driver: SqlDriver) {
         val live = liveTables(driver)
         check(live == EXPECTED_TABLES) {
