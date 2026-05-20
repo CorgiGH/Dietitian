@@ -14,12 +14,10 @@ object DataModuleDesktop {
                 "jdbc:sqlite:${File(dir, "dietician.db")}",
                 Properties().apply { put("foreign_keys", "ON") },
             )
-        // SQLDelight's JDBC driver doesn't auto-apply Schema; do it explicitly the first time.
-        if (!File(dir, ".schema_applied").exists()) {
-            DieticianDatabase.Schema.create(driver)
-            File(dir, ".schema_applied").writeText("v1")
-        }
+        val database = DieticianDatabase(driver)
+        // Versioned create/migrate driven by sqlite_master, not a marker file. Council 1779306247.
+        DesktopSchemaMigrator.ensureSchema(database, driver, dir)
         WalPragmas.applyAll(driver)
-        return DieticianDatabase(driver)
+        return database
     }
 }
