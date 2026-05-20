@@ -1,7 +1,13 @@
-package com.dietician.server.coach
+package com.dietician.shared.llm
 
 /**
  * iter-11 — locale-keyed system prompt for Coach turns.
+ *
+ * Lives in `:shared` so BOTH the server-routed Coach path (`CoachService`) and
+ * the desktop ClaudeMax CLI path (`DesktopPlatformModule`'s `LocalCoachProvider`)
+ * apply the SAME persona + safeguards. Council 1779292644 moved it here: the
+ * desktop path was building `LlmRequest` with no system prompt, shipping a Coach
+ * with the hard-refusal / bigorexia safeguards silently absent.
  *
  * Romanian copy uses comma-below `ș`/`ț` (U+0219 / U+021B), never cedilla
  * `ş`/`ţ` (U+015F / U+0163). The CoachChatScreen tests assert the same.

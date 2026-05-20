@@ -1,6 +1,6 @@
-package com.dietician.server.coach
+package com.dietician.shared.llm
 
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -23,5 +23,16 @@ class CoachSystemPromptsTest {
     @Test
     fun `unknown locale falls back to EN`() {
         assertEquals(CoachSystemPrompts.forLocale("en"), CoachSystemPrompts.forLocale("xx"))
+    }
+
+    @Test
+    fun `EN and RO both carry the hard-refusal safeguards`() {
+        // Council 1779292644 — the desktop Coach must ship with the ED /
+        // bigorexia guardrails; assert both locales actually contain them.
+        val en = CoachSystemPrompts.forLocale("en")
+        val ro = CoachSystemPrompts.forLocale("ro")
+        assertTrue("bigorexia" in en.lowercase(), "EN must carry the bigorexia safeguard")
+        assertTrue("bigorexia" in ro.lowercase(), "RO must carry the bigorexia safeguard")
+        assertTrue("1800" in en && "1800" in ro, "both must name the very-low-calorie floor")
     }
 }

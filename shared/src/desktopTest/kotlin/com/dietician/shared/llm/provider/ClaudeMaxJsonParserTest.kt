@@ -79,6 +79,33 @@ class ClaudeMaxJsonParserTest {
     }
 
     @Test
+    fun `parses normally when rate_limit_event status is allowed`() {
+        val stdout = """
+            [
+              {"type":"rate_limit_event","rate_limit_info":{"status":"allowed"}},
+              {"type":"result","subtype":"success","is_error":false,"result":"ok",
+               "usage":{"input_tokens":1,"output_tokens":1}}
+            ]
+        """.trimIndent()
+        val resp = parser.parse(stdout, requestedModel = "")
+        assertEquals("ok", resp.text)
+    }
+
+    @Test
+    fun `throws RateLimitExceeded when rate_limit_event status is not allowed`() {
+        // A throttled run still exits 0 with subtype success + an apology body —
+        // the rate_limit_event status is the structured signal (council 1779292644).
+        val stdout = """
+            [
+              {"type":"rate_limit_event","rate_limit_info":{"status":"rejected"}},
+              {"type":"result","subtype":"success","is_error":false,
+               "result":"I have reached my usage limit.","usage":{"input_tokens":1,"output_tokens":9}}
+            ]
+        """.trimIndent()
+        assertFailsWith<LlmError.RateLimitExceeded> { parser.parse(stdout, "") }
+    }
+
+    @Test
     fun `parses the captured real claude CLI envelope fixture`() {
         // Guards the parser against the real `claude -p --output-format json`
         // wire shape captured from CLI v2.1.x (council 1779276774 CONFIDENCE-9

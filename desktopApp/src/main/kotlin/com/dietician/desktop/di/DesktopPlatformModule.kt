@@ -62,6 +62,12 @@ val desktopPlatformModule: Module = module {
                                     prompt,
                                 ),
                             ),
+                            // Council 1779292644: the desktop Coach MUST carry the
+                            // dietician persona + the ED/bigorexia hard-refusal
+                            // safeguards. ClaudeMaxCliProvider routes this to
+                            // `claude --append-system-prompt`.
+                            systemPrompt = com.dietician.shared.llm.CoachSystemPrompts
+                                .forLocale(locale.wire()),
                         )
                     // Empty model lets the `claude` CLI use its own configured
                     // default; ClaudeMaxJsonParser reads the actual model id back

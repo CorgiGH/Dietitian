@@ -63,6 +63,19 @@ class ClaudeMaxJsonParser(
             )
         }
 
+        // Council 1779292644 — a rate-limited / quota-exhausted run can still
+        // exit 0 with subtype "success" and a `result` body that is an apology
+        // string. The CLI emits a `rate_limit_event` whose `rate_limit_info.status`
+        // is "allowed" on a real call; any other status means the turn was
+        // throttled. Fail loudly (so the circuit-breaker trips and the audit
+        // records a failure) rather than laundering the apology as an answer.
+        val rateStatus = events.firstOrNull { it.typeField() == "rate_limit_event" }
+            ?.get("rate_limit_info")?.jsonObject
+            ?.get("status")?.jsonPrimitive?.contentOrNull
+        if (rateStatus != null && rateStatus != "allowed") {
+            throw LlmError.RateLimitExceeded(retryAfterMs = null)
+        }
+
         val text = result["result"]?.jsonPrimitive?.contentOrNull.orEmpty()
         val usage = result["usage"]?.jsonObject
         val inputTokens = usage?.get("input_tokens")?.jsonPrimitive?.intOrNull ?: 0
