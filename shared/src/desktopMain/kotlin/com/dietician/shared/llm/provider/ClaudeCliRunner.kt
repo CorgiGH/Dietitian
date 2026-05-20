@@ -11,8 +11,7 @@ data class CliResult(val exitCode: Int, val stdout: String)
  *
  * The seam is deliberately "argv + stdin in, exitCode + stdout out" — the exact
  * one-shot contract of `claude -p`. A fake that returns a canned [CliResult]
- * exercises the real exit-code and parse decisions, unlike the previous
- * `FakeSpawnedProcess` which bypassed the protocol entirely (council 1779276774).
+ * exercises the real exit-code and parse decisions (council 1779276774).
  */
 interface ClaudeCliRunner {
     suspend fun run(args: List<String>, stdin: String): CliResult
