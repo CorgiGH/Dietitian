@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,16 +48,24 @@ fun OnboardingScreen(actions: OnboardingActions) {
     var token by remember { mutableStateOf("") }
     var stage by remember { mutableStateOf<OnboardingStage>(OnboardingStage.EmailEntry) }
     var success by remember { mutableStateOf(false) }
+    var verifyMsg by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .testTag("onboarding-screen"),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.Start,
+    // Themed surface backing — without it the onboarding Column is transparent
+    // and the white desktop window shows through, so dark-theme white text
+    // (onSurface) renders white-on-white. Surface paints the scheme background.
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
     ) {
-        when (val stg = stage) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .testTag("onboarding-screen"),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.Start,
+        ) {
+            when (val stg = stage) {
             is OnboardingStage.EmailEntry -> {
                 Text(text = s.onboarding_sign_in_title)
                 OutlinedTextField(
@@ -101,11 +111,28 @@ fun OnboardingScreen(actions: OnboardingActions) {
                     label = { Text(s.onboarding_token_label) },
                     modifier = Modifier.testTag("onboarding-token-input"),
                 )
+                // Diagnostic: a magic-link token is 43 chars. If this shows 0
+                // the paste didn't land in the field.
+                Text(
+                    text = "token length: ${token.trim().length}",
+                    modifier = Modifier.testTag("onboarding-token-charcount"),
+                )
                 Button(
-                    onClick = { actions.onVerifyToken(token.trim()) },
+                    onClick = {
+                        verifyMsg = "Verifying…"
+                        actions.onVerifyToken(token.trim()) { ok ->
+                            verifyMsg = if (ok) "Verified — signing in…" else "Invalid or expired token."
+                        }
+                    },
                     modifier = Modifier.testTag("onboarding-verify-token"),
                 ) {
                     Text(s.onboarding_verify_token_button)
+                }
+                if (verifyMsg.isNotEmpty()) {
+                    Text(
+                        text = verifyMsg,
+                        modifier = Modifier.testTag("onboarding-verify-status"),
+                    )
                 }
                 // Dev affordance — fakes the verify signal WITHOUT a server
                 // session. Kept for screen-walk smoke tests; do not use for a
@@ -122,6 +149,7 @@ fun OnboardingScreen(actions: OnboardingActions) {
                         modifier = Modifier.testTag("onboarding-success"),
                     )
                 }
+            }
             }
         }
     }
@@ -156,10 +184,12 @@ interface OnboardingActions {
     /**
      * Invoked when the user pastes a magic-link token + taps Verify (Desktop —
      * no deep-link handler). Host POSTs /auth/magic-link/verify; on success it
-     * stores the server session + drives the verified signal. Default no-ops so
-     * test fakes don't need to override.
+     * stores the server session + drives the verified signal. [onResult] is
+     * called with true on a verified session, false on 401/network failure so
+     * the screen can surface the outcome. Default no-ops so test fakes don't
+     * need to override.
      */
-    fun onVerifyToken(token: String) {}
+    fun onVerifyToken(token: String, onResult: (Boolean) -> Unit) {}
 
     /**
      * Binds the supplied callback to whatever signal the host uses (typically a

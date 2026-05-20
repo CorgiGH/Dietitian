@@ -47,19 +47,27 @@ class OnboardingActionsImpl(
         verifiedCallback()
     }
 
-    override fun onVerifyToken(token: String) {
+    override fun onVerifyToken(token: String, onResult: (Boolean) -> Unit) {
         val repo = authRepository
         val sc = scope
-        if (repo == null || sc == null || token.isBlank()) {
+        if (token.isBlank()) {
+            onResult(false)
+            return
+        }
+        if (repo == null || sc == null) {
             // No network wiring (tests) — fall back to the simulate behaviour.
             onVerified()
+            onResult(true)
             return
         }
         sc.launch {
-            repo.verifyMagicLink(token).onSuccess {
-                settingsStore.markOnboarded()
-                verifiedCallback()
-            }
+            repo.verifyMagicLink(token)
+                .onSuccess {
+                    settingsStore.markOnboarded()
+                    verifiedCallback()
+                    onResult(true)
+                }
+                .onFailure { onResult(false) }
         }
     }
 

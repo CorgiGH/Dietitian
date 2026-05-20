@@ -1,5 +1,6 @@
 package com.dietician.shared.ui.network
 
+import com.dietician.shared.ui.auth.AuthRepository
 import com.dietician.shared.ui.data.AuditRepository
 import com.dietician.shared.ui.data.ByokRepository
 import com.dietician.shared.ui.data.HttpAuditRepository
@@ -10,7 +11,6 @@ import com.dietician.shared.ui.data.HttpRecipeIngestClient
 import com.dietician.shared.ui.data.PaperSearchRepository
 import com.dietician.shared.ui.data.ReceiptUploadRepository
 import com.dietician.shared.ui.data.RecipeIngestClient
-import com.dietician.shared.ui.auth.AuthRepository
 import io.ktor.client.HttpClient
 import org.koin.core.module.Module
 import org.koin.dsl.module
