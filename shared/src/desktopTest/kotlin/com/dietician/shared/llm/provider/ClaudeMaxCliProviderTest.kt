@@ -5,122 +5,82 @@ import com.dietician.shared.llm.DeviceClass
 import com.dietician.shared.llm.LlmError
 import com.dietician.shared.llm.LlmMessage
 import com.dietician.shared.llm.LlmRequest
-import com.dietician.shared.llm.ProviderId
 import com.dietician.shared.llm.Role
 import com.dietician.shared.llm.TaskType
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeInstanceOf
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class ClaudeMaxCliProviderTest {
-    private val cannedOk = """
-        {"type":"message_start","message":{"id":"m","model":"x","usage":{"input_tokens":1}}}
-        {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"ok"}}
-        {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}
-        {"type":"message_stop"}
+
+    private fun request(prompt: String = "how much protein?"): LlmRequest =
+        LlmRequest(
+            subjectId = "victor",
+            task = TaskType.TEXT,
+            deviceClass = DeviceClass.VICTOR_DESKTOP,
+            capability = Capability.NON_STREAMING,
+            messages = listOf(LlmMessage(Role.USER, prompt)),
+        )
+
+    private val successStdout = """
+        [
+          {"type":"assistant","message":{"model":"claude-opus-4-7","content":[{"type":"text","text":"hi"}]}},
+          {"type":"result","subtype":"success","is_error":false,"result":"137 g.",
+           "stop_reason":"end_turn","usage":{"input_tokens":900,"output_tokens":12}}
+        ]
     """.trimIndent()
 
-    private fun req() = LlmRequest(
-        subjectId = "victor",
-        task = TaskType.TEXT,
-        deviceClass = DeviceClass.VICTOR_DESKTOP,
-        capability = Capability.NON_STREAMING,
-        messages = listOf(LlmMessage(Role.USER, "hi")),
-    )
-
     @Test
-    fun `RC2 forTesting companion factory injects spawner and skipWarmUp by default`(): Unit = runBlocking {
-        val spawner = FakeProcessSpawner { FakeSpawnedProcess(cannedOk) }
-        val provider = ClaudeMaxCliProvider.forTesting(spawner)
-        // skipWarmUp=true default → no spawns yet
-        spawner.spawnCount.get() shouldBe 0
-        val resp = provider.call(req(), "anthropic/claude-sonnet-4.5")
-        resp.text shouldBe "ok"
-        // first call lazy-spawned
-        spawner.spawnCount.get() shouldBe 1
+    fun `call returns parsed response on a clean run`() = runTest {
+        val runner = FakeClaudeCliRunner(CliResult(exitCode = 0, stdout = successStdout))
+        val provider = ClaudeMaxCliProvider.forTesting(runner)
+        val resp = provider.call(request(), model = "")
+        assertEquals("137 g.", resp.text)
+        assertEquals(12, resp.outputTokens)
     }
 
     @Test
-    fun `RC2 production companion factory uses real ProcessSpawnerImpl with min cores-2 3 pool`() {
-        // Don't actually spawn `claude` — just verify the factory wires up without crash.
-        // Set binaryPath to one that won't even attempt a real exec until isAvailable() is hit.
-        // Production factory eagerly warm-ups → spawn-on-init throws if binary missing → caught below.
-        try {
-            val provider = ClaudeMaxCliProvider.production(ClaudeMaxConfig(binaryPath = "/__no_such_binary__"))
-            // If we got here, isAvailable should still return false on missing pool (sanity).
-            provider.isAvailable() shouldBe false
-        } catch (e: Exception) {
-            // Eager warm-up throws on missing binary — expected on a system without `claude`.
-            // This is acceptable: production() is a happy-path constructor used only when
-            // the user has installed Claude Max CLI. The test verifies the factory wiring
-            // compiles + executes the construction path.
-            (e is java.io.IOException || e.cause is java.io.IOException) shouldBe true
-        }
+    fun `call passes one-shot flags and the user prompt as stdin`() = runTest {
+        val runner = FakeClaudeCliRunner(CliResult(0, successStdout))
+        ClaudeMaxCliProvider.forTesting(runner).call(request("eat what?"), model = "")
+        val args = runner.lastArgs!!
+        assertTrue(args.containsAll(listOf("-p", "--output-format", "json")))
+        assertEquals("eat what?", runner.lastStdin)
     }
 
     @Test
-    fun `cold-start tolerance — first call after skipWarmUp lazily spawns and returns`(): Unit = runBlocking {
-        val spawner = FakeProcessSpawner { FakeSpawnedProcess(cannedOk, latencyMs = 50) }
-        val provider = ClaudeMaxCliProvider.forTesting(spawner, skipWarmUp = true, timeoutMs = 5_000)
-        val resp = provider.call(req(), "anthropic/claude-sonnet-4.5")
-        resp.text shouldBe "ok"
-        spawner.spawnCount.get() shouldBe 1
+    fun `non-zero exit code throws LlmError and is not a silent empty success`() = runTest {
+        val runner = FakeClaudeCliRunner(
+            CliResult(exitCode = 1, stdout = "error: unknown option '--stream-json'"),
+        )
+        val provider = ClaudeMaxCliProvider.forTesting(runner)
+        assertFailsWith<LlmError> { provider.call(request(), model = "") }
     }
 
     @Test
-    fun `Windows-hang simulation — neverReturns proc hits timeout and circuit increments`(): Unit = runBlocking {
-        val spawner = FakeProcessSpawner { FakeSpawnedProcess(neverReturns = true) }
-        val cb = CircuitBreaker(failureThreshold = 5, resetTimeoutMs = 30_000)
-        val provider = ClaudeMaxCliProvider.forTesting(spawner, timeoutMs = 100, circuitBreaker = cb)
-        try {
-            provider.call(req(), "anthropic/claude-sonnet-4.5")
-            error("expected Timeout")
-        } catch (e: LlmError.Timeout) {
-            e.phase shouldBe "claudemax-cli"
-        }
+    fun `non-success result envelope throws LlmError`() = runTest {
+        val runner = FakeClaudeCliRunner(
+            CliResult(0, """[{"type":"result","subtype":"error_during_execution","is_error":true,"result":""}]"""),
+        )
+        assertFailsWith<LlmError> { ClaudeMaxCliProvider.forTesting(runner).call(request(), "") }
     }
 
     @Test
-    fun `circuit-breaker opens after 5 consecutive failures`(): Unit = runBlocking {
-        val spawner = FakeProcessSpawner { FakeSpawnedProcess(throwOnSend = RuntimeException("boom")) }
-        val cb = CircuitBreaker(failureThreshold = 5, resetTimeoutMs = 30_000)
-        val provider = ClaudeMaxCliProvider.forTesting(spawner, poolSize = 1, circuitBreaker = cb)
-        repeat(5) {
-            try {
-                provider.call(req(), "anthropic/claude-sonnet-4.5")
-            } catch (_: LlmError) {
-                // expected
-            }
-        }
-        // 6th call short-circuits with ProviderUnavailable (circuit OPEN).
-        try {
-            provider.call(req(), "anthropic/claude-sonnet-4.5")
-            error("expected ProviderUnavailable")
-        } catch (e: LlmError.ProviderUnavailable) {
-            e.provider shouldBe ProviderId("claudemax-cli")
-        }
+    fun `repeated failures open the circuit breaker`() = runTest {
+        val runner = FakeClaudeCliRunner(CliResult(exitCode = 1, stdout = "boom"))
+        val breaker = CircuitBreaker(failureThreshold = 3, resetTimeoutMs = 30_000)
+        val provider = ClaudeMaxCliProvider.forTesting(runner, circuitBreaker = breaker)
+        repeat(3) { runCatching { provider.call(request(), "") } }
+        assertFailsWith<LlmError.ProviderUnavailable> { provider.call(request(), "") }
+        assertEquals(3, runner.runCount)
     }
 
     @Test
-    fun `non-LlmError exception surfaces as TransientFailure`(): Unit = runBlocking {
-        val spawner = FakeProcessSpawner {
-            FakeSpawnedProcess(throwOnSend = RuntimeException("network glitch"))
-        }
-        val provider = ClaudeMaxCliProvider.forTesting(spawner, poolSize = 1)
-        try {
-            provider.call(req(), "anthropic/claude-sonnet-4.5")
-            error("expected TransientFailure")
-        } catch (e: LlmError) {
-            e.shouldBeInstanceOf<LlmError.TransientFailure>()
-            e.cause?.message shouldBe "network glitch"
-        }
-    }
-
-    @Test
-    fun `isAvailable returns false when warm-pool empty before first call`() {
-        val spawner = FakeProcessSpawner { FakeSpawnedProcess(cannedOk) }
-        val provider = ClaudeMaxCliProvider.forTesting(spawner, skipWarmUp = true)
-        provider.isAvailable() shouldBe false
+    fun `timeout throws LlmError Timeout`() = runTest {
+        val runner = FakeClaudeCliRunner(neverReturns = true)
+        val provider = ClaudeMaxCliProvider.forTesting(runner, timeoutMs = 50)
+        assertFailsWith<LlmError.Timeout> { provider.call(request(), "") }
     }
 }

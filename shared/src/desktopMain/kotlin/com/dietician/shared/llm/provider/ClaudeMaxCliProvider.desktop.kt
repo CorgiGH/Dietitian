@@ -4,30 +4,29 @@ import com.dietician.shared.llm.LlmError
 import com.dietician.shared.llm.LlmRequest
 import com.dietician.shared.llm.LlmResponse
 import com.dietician.shared.llm.ProviderId
+import com.dietician.shared.llm.Role
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 
 /**
- * Desktop actual for ClaudeMax CLI — Plan-2 Tasks 14-18.
+ * ClaudeMax CLI provider — desktop actual. Council 1779276774 rewrite.
  *
- * RC2 (Council 1779062699) — CANONICAL companion-factory construction. Two entry points:
- *   - `forTesting(spawner, skipWarmUp)` — injects a fake spawner + optionally short-circuits
- *     warm-up so unit tests assert behavior without spawning real processes.
- *   - `production(config)` — builds the real [ProcessSpawnerImpl], warm-pool sized to
- *     `min(cores-2, 3)`, full 60s timeout, eager warm-up.
+ * Each [call] spawns a fresh one-shot `claude -p --output-format json` process
+ * via [ClaudeCliRunner]. There is NO warm-pool: `claude -p` reads stdin to EOF,
+ * answers once, and exits, so a process cannot be reused — pooling was never
+ * possible against this CLI.
  *
- * Zero reflection, zero lateinit, zero secondary-constructor-swap. Primary constructor is
- * `internal` so only the companion factories construct outside of tests in the same module.
+ * Failure is loud: a non-zero CLI exit, a timeout, or a non-success result
+ * envelope throws an [LlmError] so [circuitBreaker] records the failure and the
+ * audit trail sees it. An empty or failed run must never look like a successful
+ * empty answer — that error-swallowing was the original empty-Coach-reply bug.
  *
- * Call flow:
- *   1. Check circuit-breaker — if OPEN, throw ProviderUnavailable.
- *   2. acquire() a warm proc from the pool (blocks if all in use).
- *   3. send() under withTimeout — on timeout/exception, markSick + recordFailure.
- *   4. On success → recordSuccess + release.
+ * RC2 construction: the primary constructor is `internal`; callers go through
+ * the [forTesting] / [production] companion factories.
  */
 actual class ClaudeMaxCliProvider internal constructor(
-    @Suppress("UnusedPrivateProperty", "unused") private val spawner: ProcessSpawner,
-    private val warmPool: ClaudeMaxWarmPool,
+    private val runner: ClaudeCliRunner,
+    private val parser: ClaudeMaxJsonParser,
     private val circuitBreaker: CircuitBreaker,
     private val timeoutMs: Long,
 ) {
@@ -35,83 +34,73 @@ actual class ClaudeMaxCliProvider internal constructor(
         if (circuitBreaker.isOpen()) {
             throw LlmError.ProviderUnavailable(ProviderId("claudemax-cli"))
         }
-        val proc = warmPool.acquire()
-        var failed = false
         return try {
-            val output = withTimeout(timeoutMs) { proc.send(request, model) }
+            val result = withTimeout(timeoutMs) {
+                runner.run(buildArgs(request, model), encodePrompt(request))
+            }
+            if (result.exitCode != 0) {
+                throw LlmError.TransientFailure(
+                    IllegalStateException(
+                        "claude CLI exited ${result.exitCode}: ${result.stdout.take(500)}",
+                    ),
+                )
+            }
+            val response = parser.parse(result.stdout, model)
             circuitBreaker.recordSuccess()
-            output
+            response
         } catch (e: TimeoutCancellationException) {
-            failed = true
             circuitBreaker.recordFailure()
-            warmPool.markSick(proc)
             throw LlmError.Timeout("claudemax-cli")
         } catch (e: LlmError) {
-            failed = true
             circuitBreaker.recordFailure()
-            warmPool.markSick(proc)
             throw e
         } catch (e: Throwable) {
-            failed = true
             circuitBreaker.recordFailure()
-            warmPool.markSick(proc)
             throw LlmError.TransientFailure(e)
-        } finally {
-            if (!failed) {
-                warmPool.release(proc)
-            } else {
-                // markSick already closed + decremented; we still need to release the semaphore permit.
-                warmPool.release(proc)
-            }
         }
     }
 
-    actual fun isAvailable(): Boolean = warmPool.healthyCount() > 0 && !circuitBreaker.isOpen()
+    actual fun isAvailable(): Boolean = !circuitBreaker.isOpen()
 
     companion object {
-        /**
-         * Test-only entry. Injects an arbitrary [ProcessSpawner] (typically a Fake that returns
-         * canned SpawnedProcess values). `skipWarmUp=true` (default) keeps the pool empty —
-         * the first call lazily spawns under the semaphore so tests can assert spawn counts
-         * deterministically.
-         */
+        /** Test entry — inject a [FakeClaudeCliRunner]. */
         fun forTesting(
-            spawner: ProcessSpawner,
-            skipWarmUp: Boolean = true,
-            poolSize: Int = 1,
+            runner: ClaudeCliRunner,
             timeoutMs: Long = 5_000,
             circuitBreaker: CircuitBreaker = CircuitBreaker(failureThreshold = 5, resetTimeoutMs = 30_000),
-        ): ClaudeMaxCliProvider {
-            val pool = ClaudeMaxWarmPool(
-                spawner = spawner,
-                size = poolSize,
-                warmUpOnInit = !skipWarmUp,
+            parser: ClaudeMaxJsonParser = ClaudeMaxJsonParser(),
+        ): ClaudeMaxCliProvider = ClaudeMaxCliProvider(runner, parser, circuitBreaker, timeoutMs)
+
+        /** Production entry — real `claude` subprocess, 120s timeout. */
+        fun production(): ClaudeMaxCliProvider =
+            ClaudeMaxCliProvider(
+                runner = ProcessClaudeCliRunner(),
+                parser = ClaudeMaxJsonParser(),
+                circuitBreaker = CircuitBreaker(failureThreshold = 5, resetTimeoutMs = 30_000),
+                timeoutMs = 120_000,
             )
-            return ClaudeMaxCliProvider(spawner, pool, circuitBreaker, timeoutMs)
-        }
 
         /**
-         * Production entry. Spawns the real `claude` binary at [ClaudeMaxConfig.binaryPath],
-         * sizes the pool to `min(cores-2, 3)` (cap to prevent oversubscription on small
-         * desktops; clamp to at least 1).
+         * One-shot argv. Context-isolation flags (council 1779276774): no MCP
+         * servers, no slash-command skills, and per-machine system-prompt
+         * sections excluded — the Coach call carries only its own prompt, not
+         * the host's project context.
          */
-        fun production(config: ClaudeMaxConfig = ClaudeMaxConfig()): ClaudeMaxCliProvider {
-            val spawner = ProcessSpawnerImpl(config.binaryPath)
-            val cores = Runtime.getRuntime().availableProcessors()
-            val poolSize = minOf((cores - 2).coerceAtLeast(1), 3)
-            val pool = ClaudeMaxWarmPool(
-                spawner = spawner,
-                size = poolSize,
-                warmUpOnInit = true,
-            )
-            val cb = CircuitBreaker(failureThreshold = 5, resetTimeoutMs = 30_000)
-            return ClaudeMaxCliProvider(spawner, pool, cb, timeoutMs = 60_000)
+        private fun buildArgs(request: LlmRequest, model: String): List<String> = buildList {
+            add("-p")
+            add("--output-format"); add("json")
+            add("--exclude-dynamic-system-prompt-sections")
+            add("--strict-mcp-config")
+            add("--disable-slash-commands")
+            request.systemPrompt?.takeIf { it.isNotBlank() }?.let {
+                add("--append-system-prompt"); add(it)
+            }
+            model.takeIf { it.isNotBlank() }?.let {
+                add("--model"); add(it)
+            }
         }
+
+        private fun encodePrompt(request: LlmRequest): String =
+            request.messages.filter { it.role == Role.USER }.joinToString("\n") { it.content }
     }
 }
-
-/**
- * Production config — `binaryPath` defaults to `"claude"` so the launcher resolves via PATH.
- * Tests override to point at a fake binary or a wrapper script.
- */
-data class ClaudeMaxConfig(val binaryPath: String = "claude")
