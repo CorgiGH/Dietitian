@@ -8,6 +8,7 @@ import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -155,6 +156,39 @@ class DesktopSchemaMigratorTest {
                 provider = "claudemax",
             )
             assertEquals(1, db.`0009_audit_pending_outboxQueries`.findUncommitted().executeAsList().size)
+        }
+    }
+
+    @Test
+    fun fullV2SchemaAtUserVersionZeroIsReconciledNotRecreated() {
+        // A DB created post-0009 by old code, or a fresh create that crashed before the
+        // version bump: all 29 tables present, user_version still 0. Must NOT re-run
+        // Schema.create (would crash "table already exists") — just bump the version.
+        newDriver().use { driver ->
+            val db = DieticianDatabase(driver)
+            DieticianDatabase.Schema.create(driver)
+            driver.execute(null, "PRAGMA user_version = 0", 0)
+
+            DesktopSchemaMigrator.ensureSchema(db, driver, tempDir())
+
+            assertEquals(SchemaInvariant.EXPECTED_TABLES, SchemaInvariant.liveTables(driver))
+            assertEquals(DieticianDatabase.Schema.version, userVersion(driver))
+        }
+    }
+
+    @Test
+    fun partialSchemaFailsLoud() {
+        // A crash mid-create in the OLD (non-transactional) code path could leave some
+        // tables and not others. The migrator must refuse to guess.
+        newDriver().use { driver ->
+            val db = DieticianDatabase(driver)
+            DieticianDatabase.Schema.create(driver)
+            driver.execute(null, "DROP TABLE meal_events", 0) // 28 tables, but not the v1 set
+
+            val ex = assertFailsWith<IllegalStateException> {
+                DesktopSchemaMigrator.ensureSchema(db, driver, tempDir())
+            }
+            assertTrue(ex.message!!.contains("Unrecognized desktop client schema"))
         }
     }
 }
