@@ -17,14 +17,14 @@ import kotlinx.serialization.Serializable
  * `X-Subject-Id: <subjectId>` and the server compares to JWT `sub` before applying RLS.
  * [SessionInterceptor] installs that header.
  *
- * Per Batch B brief: `expiresAt` is an ISO-8601 string returned by Plan-3 (Plan-3.5 may
- * upgrade to numeric epoch — kept loose for forward-compat).
+ * `expiresAtMs` is epoch-millis (UTC), matching the wire field of the same name on
+ * the server's `MagicLinkVerifyResponse`.
  */
 @Serializable
 data class Session(
     val sessionId: String,
     val subjectId: String,
-    val expiresAt: String,
+    val expiresAtMs: Long,
 )
 
 /**

@@ -26,6 +26,10 @@ class AuthRepositoryTest {
         SessionStore.clear()
     }
 
+    // Mirrors the real HttpClientFactory config exactly — same JSON settings and
+    // `expectSuccess = false`. AuthRepository must classify 401/5xx itself by
+    // inspecting `response.status`; it cannot rely on Ktor throwing a
+    // ResponseException, because the production client never sets expectSuccess.
     private fun mockClient(handler: MockRequestHandleScope.(HttpRequestData) -> HttpResponseData): HttpClient {
         val engine = MockEngine { req -> handler(req) }
         return HttpClient(engine) {
@@ -33,12 +37,11 @@ class AuthRepositoryTest {
                 json(
                     Json {
                         ignoreUnknownKeys = true
-                        encodeDefaults = true
+                        explicitNulls = false
                     },
                 )
             }
-            // Map non-2xx to ResponseException so AuthRepository.mapError can classify it.
-            expectSuccess = true
+            expectSuccess = false
         }
     }
 
@@ -65,9 +68,11 @@ class AuthRepositoryTest {
 
     @Test
     fun `verifyMagicLink stores session on 200`() = runTest {
+        // Exact wire shape emitted by the server (AuthRoutes MagicLinkVerifyResponse):
+        // `expiresAtMs` is a numeric epoch-millis Long, NOT an ISO-8601 string.
         val client = mockClient {
             respond(
-                """{"sessionId":"sess-1","subjectId":"victor-uuid","expiresAt":"2026-06-01T00:00:00Z"}""",
+                """{"sessionId":"sess-1","subjectId":"victor-uuid","expiresAtMs":1780358400000}""",
                 HttpStatusCode.OK,
                 headersOf("Content-Type", "application/json"),
             )
@@ -78,6 +83,7 @@ class AuthRepositoryTest {
         val session = result.getOrThrow()
         assertEquals("sess-1", session.sessionId)
         assertEquals("victor-uuid", session.subjectId)
+        assertEquals(1780358400000L, session.expiresAtMs)
         // Session must be persisted to SessionStore on success.
         assertEquals(session, SessionStore.current.value)
         assertEquals("victor-uuid", SessionStore.currentSubjectId)

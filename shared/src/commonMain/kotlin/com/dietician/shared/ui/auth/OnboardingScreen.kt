@@ -66,90 +66,90 @@ fun OnboardingScreen(actions: OnboardingActions) {
             horizontalAlignment = Alignment.Start,
         ) {
             when (val stg = stage) {
-            is OnboardingStage.EmailEntry -> {
-                Text(text = s.onboarding_sign_in_title)
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text(s.onboarding_email_label) },
-                    modifier = Modifier.testTag("onboarding-email-input"),
-                )
-                Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        actions.onSendMagicLink(email)
-                        stage = OnboardingStage.CheckEmail(email)
-                    },
-                    modifier = Modifier.testTag("onboarding-send-magic-link"),
-                ) {
-                    Text(s.onboarding_send_magic_link_button)
+                is OnboardingStage.EmailEntry -> {
+                    Text(text = s.onboarding_sign_in_title)
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text(s.onboarding_email_label) },
+                        modifier = Modifier.testTag("onboarding-email-input"),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            actions.onSendMagicLink(email)
+                            stage = OnboardingStage.CheckEmail(email)
+                        },
+                        modifier = Modifier.testTag("onboarding-send-magic-link"),
+                    ) {
+                        Text(s.onboarding_send_magic_link_button)
+                    }
                 }
-            }
 
-            is OnboardingStage.CheckEmail -> {
-                Text(
-                    text = s.onboarding_check_email_title,
-                    modifier = Modifier.testTag("onboarding-check-email"),
-                )
-                Text(
-                    text = s.onboarding_same_device_copy,
-                    modifier = Modifier.testTag("onboarding-same-device-copy"),
-                )
-                TextButton(
-                    onClick = { actions.onResend(stg.email) },
-                    modifier = Modifier.testTag("onboarding-resend-link"),
-                ) {
-                    Text(s.onboarding_resend_link_button)
-                }
-                // Real verify path for Desktop: no email client / deep-link
-                // handler, so the user pastes the magic-link token directly.
-                // `onVerifyToken` POSTs /auth/magic-link/verify → stores the
-                // server session that Coach 2PC + every authed call needs.
-                OutlinedTextField(
-                    value = token,
-                    onValueChange = { token = it },
-                    label = { Text(s.onboarding_token_label) },
-                    modifier = Modifier.testTag("onboarding-token-input"),
-                )
-                // Diagnostic: a magic-link token is 43 chars. If this shows 0
-                // the paste didn't land in the field.
-                Text(
-                    text = "token length: ${token.trim().length}",
-                    modifier = Modifier.testTag("onboarding-token-charcount"),
-                )
-                Button(
-                    onClick = {
-                        verifyMsg = "Verifying…"
-                        actions.onVerifyToken(token.trim()) { ok ->
-                            verifyMsg = if (ok) "Verified — signing in…" else "Invalid or expired token."
-                        }
-                    },
-                    modifier = Modifier.testTag("onboarding-verify-token"),
-                ) {
-                    Text(s.onboarding_verify_token_button)
-                }
-                if (verifyMsg.isNotEmpty()) {
+                is OnboardingStage.CheckEmail -> {
                     Text(
-                        text = verifyMsg,
-                        modifier = Modifier.testTag("onboarding-verify-status"),
+                        text = s.onboarding_check_email_title,
+                        modifier = Modifier.testTag("onboarding-check-email"),
                     )
-                }
-                // Dev affordance — fakes the verify signal WITHOUT a server
-                // session. Kept for screen-walk smoke tests; do not use for a
-                // real login (Coach + authed routes will 401).
-                Button(
-                    onClick = actions::onVerified,
-                    modifier = Modifier.testTag("onboarding-simulate-verify"),
-                ) {
-                    Text(s.onboarding_simulate_verify_button)
-                }
-                if (success) {
                     Text(
-                        text = s.onboarding_success_label,
-                        modifier = Modifier.testTag("onboarding-success"),
+                        text = s.onboarding_same_device_copy,
+                        modifier = Modifier.testTag("onboarding-same-device-copy"),
                     )
+                    TextButton(
+                        onClick = { actions.onResend(stg.email) },
+                        modifier = Modifier.testTag("onboarding-resend-link"),
+                    ) {
+                        Text(s.onboarding_resend_link_button)
+                    }
+                    // Real verify path for Desktop: no email client / deep-link
+                    // handler, so the user pastes the magic-link token directly.
+                    // `onVerifyToken` POSTs /auth/magic-link/verify → stores the
+                    // server session that Coach 2PC + every authed call needs.
+                    OutlinedTextField(
+                        value = token,
+                        onValueChange = { token = it },
+                        label = { Text(s.onboarding_token_label) },
+                        modifier = Modifier.testTag("onboarding-token-input"),
+                    )
+                    // Diagnostic: a magic-link token is 43 chars. If this shows 0
+                    // the paste didn't land in the field.
+                    Text(
+                        text = "token length: ${token.trim().length}",
+                        modifier = Modifier.testTag("onboarding-token-charcount"),
+                    )
+                    Button(
+                        onClick = {
+                            verifyMsg = "Verifying…"
+                            actions.onVerifyToken(token.trim()) { ok ->
+                                verifyMsg = if (ok) "Verified — signing in…" else "Invalid or expired token."
+                            }
+                        },
+                        modifier = Modifier.testTag("onboarding-verify-token"),
+                    ) {
+                        Text(s.onboarding_verify_token_button)
+                    }
+                    if (verifyMsg.isNotEmpty()) {
+                        Text(
+                            text = verifyMsg,
+                            modifier = Modifier.testTag("onboarding-verify-status"),
+                        )
+                    }
+                    // Dev affordance — fakes the verify signal WITHOUT a server
+                    // session. Kept for screen-walk smoke tests; do not use for a
+                    // real login (Coach + authed routes will 401).
+                    Button(
+                        onClick = actions::onVerified,
+                        modifier = Modifier.testTag("onboarding-simulate-verify"),
+                    ) {
+                        Text(s.onboarding_simulate_verify_button)
+                    }
+                    if (success) {
+                        Text(
+                            text = s.onboarding_success_label,
+                            modifier = Modifier.testTag("onboarding-success"),
+                        )
+                    }
                 }
-            }
             }
         }
     }

@@ -19,9 +19,14 @@ import kotlinx.serialization.Serializable
  * when the email is unknown. [requestMagicLink] therefore returns [Result.success]
  * on any 2xx. On network failure it returns [Result.failure].
  *
- * `/verify` returns 200 + `{sessionId, subjectId, expiresAt}` on a valid token;
+ * `/verify` returns 200 + `{sessionId, subjectId, expiresAtMs}` on a valid token;
  * 401 on expired/invalid. The Ktor [HttpClient] is configured by the caller so we
  * keep this class agnostic of cookie storage / interceptor wiring.
+ *
+ * The production [HttpClient] ([com.dietician.shared.ui.network.HttpClientFactory])
+ * runs with `expectSuccess = false`, so a non-2xx response does NOT throw a
+ * [ResponseException]. [verifyMagicLink] therefore classifies the outcome by
+ * inspecting `response.status` directly rather than relying on Ktor to throw.
  */
 class AuthRepository(
     private val http: HttpClient,
@@ -37,7 +42,7 @@ class AuthRepository(
     data class VerifyResponse(
         val sessionId: String,
         val subjectId: String,
-        val expiresAt: String,
+        val expiresAtMs: Long,
     )
 
     /** Always succeeds on 202 (anti-enumeration). Only fails on network error. */
@@ -63,18 +68,28 @@ class AuthRepository(
                 contentType(ContentType.Application.Json)
                 setBody(MagicLinkVerifyBody(token))
             }
-            val body = response.body<VerifyResponse>()
-            Session(
-                sessionId = body.sessionId,
-                subjectId = body.subjectId,
-                expiresAt = body.expiresAt,
-            )
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val body = response.body<VerifyResponse>()
+                    Session(
+                        sessionId = body.sessionId,
+                        subjectId = body.subjectId,
+                        expiresAtMs = body.expiresAtMs,
+                    )
+                }
+                HttpStatusCode.Unauthorized -> throw AuthError.InvalidToken
+                else -> throw AuthError.Server(response.status.value)
+            }
         }.onSuccess { SessionStore.set(it) }.recoverCatching { t ->
             throw mapError(t)
         }
 
     private fun mapError(t: Throwable): AuthError =
         when (t) {
+            // Already classified by the status-code branch above.
+            is AuthError -> t
+            // Defence-in-depth: if a caller ever supplies an HttpClient with
+            // `expectSuccess = true`, a non-2xx surfaces as a ResponseException.
             is ResponseException ->
                 if (t.response.status == HttpStatusCode.Unauthorized) {
                     AuthError.InvalidToken

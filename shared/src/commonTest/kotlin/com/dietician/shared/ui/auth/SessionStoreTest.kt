@@ -14,7 +14,7 @@ class SessionStoreTest {
 
     @Test
     fun `set populates current and currentSubjectId`() {
-        val s = Session("sess", "vic", "2026-06-01T00:00:00Z")
+        val s = Session("sess", "vic", 1780358400000L)
         SessionStore.set(s)
         assertEquals(s, SessionStore.current.value)
         assertEquals("vic", SessionStore.currentSubjectId)
@@ -22,7 +22,7 @@ class SessionStoreTest {
 
     @Test
     fun `clear wipes session`() {
-        SessionStore.set(Session("sess", "vic", "2026-06-01T00:00:00Z"))
+        SessionStore.set(Session("sess", "vic", 1780358400000L))
         SessionStore.clear()
         assertNull(SessionStore.current.value)
         assertNull(SessionStore.currentSubjectId)
@@ -30,7 +30,7 @@ class SessionStoreTest {
 
     @Test
     fun `set null is equivalent to clear`() {
-        SessionStore.set(Session("sess", "vic", "2026-06-01T00:00:00Z"))
+        SessionStore.set(Session("sess", "vic", 1780358400000L))
         SessionStore.set(null)
         assertNull(SessionStore.current.value)
     }
