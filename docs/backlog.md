@@ -9,8 +9,8 @@ Kept current at `/wrap` (the `/wrap` command reconciles this file in the same st
 appends to BRIDGE): shipped items move to `## Done` with their PR number, new gaps get
 added, the header below is refreshed.
 
-- **Last updated:** 2026-05-20
-- **master HEAD at last update:** `8e8f88c` (PR #29 merged — ClaudeMax CLI provider rewrite + the canonical `docs/backlog.md` + doc-process wiring).
+- **Last updated:** 2026-05-21
+- **master HEAD at last update:** `8e8f88c` (PR #29 merged). PRs **#30** (systemd crash-loop cap) + **#31** (client schema migration) OPEN — both green locally, awaiting Victor's review + merge.
 - **Binding spec:** `docs/superpowers/specs/2026-05-17-dietician-design.md`
 - **Session handoff:** `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/BRIDGE.md`
 
@@ -20,7 +20,7 @@ added, the header below is refreshed.
 
 ## Done
 
-Scaffold; Plan-1 event-sourced data ledger + sync; Plan-2 `:shared:llm` LLM router; Plan-3 `:server` Ktor backend; Plan-4-5 KMP Compose UI (all screens walkable); iter-11 Coach 2-phase commit; iter-11.5 LlmStream bridge; **magic-link desktop auth (PR #28)**; **desktop Coach via ClaudeMax CLI one-shot + dietician system prompt + ED/bigorexia safeguards (PR #29)**. App boots and is walkable end-to-end; server live on the VPS (`100.101.47.77:8081`). Compliance surfaces (AI Act audit log, GDPR redaction / DSAR / RoPA / consent, ED safeguards) are done.
+Scaffold; Plan-1 event-sourced data ledger + sync; Plan-2 `:shared:llm` LLM router; Plan-3 `:server` Ktor backend; Plan-4-5 KMP Compose UI (all screens walkable); iter-11 Coach 2-phase commit; iter-11.5 LlmStream bridge; **magic-link desktop auth (PR #28)**; **desktop Coach via ClaudeMax CLI one-shot + dietician system prompt + ED/bigorexia safeguards (PR #29)**; **systemd backend crash-loop limiter cap — explicit `StartLimitIntervalSec` (PR #30, open — deployed live to the VPS)**; **client SQLDelight versioned schema migration — the `.schema_applied` marker replaced by `DesktopSchemaMigrator` + `SchemaInvariant` + `1.sqm` (PR #31, open)**. App boots and is walkable end-to-end; server live on the VPS (`100.101.47.77:8081`). Compliance surfaces (AI Act audit log, GDPR redaction / DSAR / RoPA / consent, ED safeguards) are done.
 
 ---
 
@@ -28,9 +28,9 @@ Scaffold; Plan-1 event-sourced data ledger + sync; Plan-2 `:shared:llm` LLM rout
 
 | Item | Status | Note |
 |---|---|---|
-| Client SQLDelight migration runner | NOT STARTED | the `.schema_applied` marker skips new tables (e.g. `0009_audit_pending_outbox`) on an existing client DB → silent data gaps after a schema bump |
-| systemd auto-restart for the backend | FIX DEPLOYED — PR #30 | backlog was wrong: `Restart=on-failure` has shipped since PR #22. Real gap was the unreachable crash-loop limiter (`RestartSec=10s` vs the default `StartLimitIntervalSec=10s` window). Explicit `StartLimitIntervalSec=300` deployed + verified on the VPS |
-| Backend in-memory stores → Postgres (Plan-3.5) | PARTIAL | `SessionStore` / `MagicLinkService` / `RateLimiter` are `ConcurrentHashMap` → a backend restart logs Victor out and drops sessions |
+| Backend in-memory stores → Postgres (Plan-3.5) | PARTIAL — **next P0** | `SessionStore` / `MagicLinkService` / `RateLimiter` are `ConcurrentHashMap` → a backend restart logs Victor out and drops pending magic-link tokens. Needs its own pre-impl council + plan. |
+
+> Client SQLDelight migration runner and systemd auto-restart were the other two P0 items — both shipped this session, see **## Done** (PRs #31 + #30).
 
 ## P1 — core features incomplete
 
@@ -68,14 +68,15 @@ Scaffold; Plan-1 event-sourced data ledger + sync; Plan-2 `:shared:llm` LLM rout
 | 5 dormant integrations — smart scale, training log, sleep, HRV, activity feed | FUTURE | architectural seats reserved, spec §10 |
 | Parser cache-token under-reporting; real-`claude`-binary automated test | FOLLOWUP (#29) | audit under-reports prompt size on the cost=0 path; integration test uses a stub script |
 | Stop hook for deterministic session-end handoff | FOLLOWUP | council `1779301114` — `/wrap` is invoked (by user or model), not enforced; a Stop hook would run the BRIDGE + backlog reconcile deterministically so it cannot be skipped |
+| Client migration: `verifyMigrations` build-check + test hardening | FOLLOWUP (#31) | `verifyMigrations=true` is set but dormant — no `<version>.db` schema snapshot committed; generate one so future `.sqm` files get build-verified. Plus T5-review hardening: explicit table-count assertion in the reconcile test + the extra-table sub-case of the fail-loud branch (councils `1779306247` / `1779317040`) |
 | Small UI: Home empty-state copy; `ReceiptUpload` file-save wiring | MINOR | |
 
 ---
 
 ## Suggested sequence
 
-1. Merge PR #29.
-2. P0 — the four items are the reliability floor; do them before new features.
+1. Merge the two open PRs — **#30** (systemd crash-loop cap) + **#31** (client schema migration). Disjoint files; either order works.
+2. P0 — only `Backend in-memory stores → Postgres` remains; do it before new features (own pre-impl council + plan).
 3. P1 — in spec order.
 4. P2 — Plans 6 and 7; convene the 5-agent council before each plan (project rule).
 5. P3 — opportunistic; key rotation last per the user's instruction.
