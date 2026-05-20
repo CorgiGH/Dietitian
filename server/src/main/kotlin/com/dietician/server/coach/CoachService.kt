@@ -2,6 +2,7 @@ package com.dietician.server.coach
 
 import com.dietician.server.repo.BudgetRepository
 import com.dietician.shared.llm.Capability
+import com.dietician.shared.llm.CoachSystemPrompts
 import com.dietician.shared.llm.DeviceClass
 import com.dietician.shared.llm.LlmMessage
 import com.dietician.shared.llm.LlmRequest
