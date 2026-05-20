@@ -1,0 +1,5 @@
+[
+  {"type":"system","subtype":"init","session_id":"sess-test","model":"claude-opus-4-7[1m]"},
+  {"type":"assistant","message":{"model":"claude-opus-4-7","role":"assistant","content":[{"type":"text","text":"Aim for 137 g protein today."}],"usage":{"input_tokens":1200,"output_tokens":18}}},
+  {"type":"result","subtype":"success","is_error":false,"result":"Aim for 137 g protein today.","total_cost_usd":0.013,"session_id":"sess-test","stop_reason":"end_turn","num_turns":1,"usage":{"input_tokens":1200,"output_tokens":18}}
+]
