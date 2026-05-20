@@ -97,12 +97,14 @@ class DesktopSchemaMigratorTest {
         // sqlite_master, so this still migrates.
         newDriver().use { driver ->
             val db = DieticianDatabase(driver)
+            val dir = tempDir()
             createV1Database(driver)
 
-            DesktopSchemaMigrator.ensureSchema(db, driver, tempDir())
+            DesktopSchemaMigrator.ensureSchema(db, driver, dir)
 
             assertTrue(tableExists(driver, "audit_pending_outbox"))
             assertEquals(DieticianDatabase.Schema.version, userVersion(driver))
+            assertFalse(File(dir, ".schema_applied").exists())
         }
     }
 
@@ -125,7 +127,10 @@ class DesktopSchemaMigratorTest {
             driver.executeQuery(
                 identifier = null,
                 sql = "SELECT count(*) FROM pantry_events WHERE event_uuid = 'evt-1'",
-                mapper = { c -> if (c.next().value) surviving = c.getLong(0) ?: 0L; QueryResult.Unit },
+                mapper = { c ->
+                    if (c.next().value) surviving = c.getLong(0) ?: 0L
+                    QueryResult.Unit
+                },
                 parameters = 0,
             )
             assertEquals(1L, surviving)
@@ -133,7 +138,7 @@ class DesktopSchemaMigratorTest {
     }
 
     @Test
-    fun audit_pending_outboxIsQueryableAfterMigration() {
+    fun auditPendingOutboxIsQueryableAfterMigration() {
         newDriver().use { driver ->
             val db = DieticianDatabase(driver)
             createV1Database(driver)
@@ -141,8 +146,13 @@ class DesktopSchemaMigratorTest {
             DesktopSchemaMigrator.ensureSchema(db, driver, tempDir())
 
             db.`0009_audit_pending_outboxQueries`.insertOutboxRow(
-                idempotency_key = "key-1", reservation_id = "res-1", prompt_hash = "hash-1",
-                started_at_ms = 1L, last_attempt_at_ms = 1L, attempts = 0L, provider = "claudemax",
+                idempotency_key = "key-1",
+                reservation_id = "res-1",
+                prompt_hash = "hash-1",
+                started_at_ms = 1L,
+                last_attempt_at_ms = 1L,
+                attempts = 0L,
+                provider = "claudemax",
             )
             assertEquals(1, db.`0009_audit_pending_outboxQueries`.findUncommitted().executeAsList().size)
         }
