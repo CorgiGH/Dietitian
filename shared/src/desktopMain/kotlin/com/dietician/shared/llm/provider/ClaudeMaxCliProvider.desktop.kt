@@ -88,15 +88,18 @@ actual class ClaudeMaxCliProvider internal constructor(
          */
         private fun buildArgs(request: LlmRequest, model: String): List<String> = buildList {
             add("-p")
-            add("--output-format"); add("json")
+            add("--output-format")
+            add("json")
             add("--exclude-dynamic-system-prompt-sections")
             add("--strict-mcp-config")
             add("--disable-slash-commands")
             request.systemPrompt?.takeIf { it.isNotBlank() }?.let {
-                add("--append-system-prompt"); add(it)
+                add("--append-system-prompt")
+                add(it)
             }
             model.takeIf { it.isNotBlank() }?.let {
-                add("--model"); add(it)
+                add("--model")
+                add(it)
             }
         }
 
