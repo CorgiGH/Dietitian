@@ -83,4 +83,14 @@ class ClaudeMaxCliProviderTest {
         val provider = ClaudeMaxCliProvider.forTesting(runner, timeoutMs = 50)
         assertFailsWith<LlmError.Timeout> { provider.call(request(), "") }
     }
+
+    @Test
+    fun `call routes model and system prompt into args`() = runTest {
+        val runner = FakeClaudeCliRunner(CliResult(0, successStdout))
+        val req = request("q").copy(systemPrompt = "You are a dietician.")
+        ClaudeMaxCliProvider.forTesting(runner).call(req, model = "sonnet")
+        val args = runner.lastArgs!!
+        assertTrue(args.containsAll(listOf("--model", "sonnet")))
+        assertTrue(args.containsAll(listOf("--append-system-prompt", "You are a dietician.")))
+    }
 }

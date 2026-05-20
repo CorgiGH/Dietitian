@@ -32,7 +32,7 @@ actual class ClaudeMaxCliProvider internal constructor(
 ) {
     actual suspend fun call(request: LlmRequest, model: String): LlmResponse {
         if (circuitBreaker.isOpen()) {
-            throw LlmError.ProviderUnavailable(ProviderId("claudemax-cli"))
+            throw LlmError.ProviderUnavailable(ProviderId(PROVIDER_ID))
         }
         return try {
             val result = withTimeout(timeoutMs) {
@@ -48,9 +48,9 @@ actual class ClaudeMaxCliProvider internal constructor(
             val response = parser.parse(result.stdout, model)
             circuitBreaker.recordSuccess()
             response
-        } catch (e: TimeoutCancellationException) {
+        } catch (_: TimeoutCancellationException) {
             circuitBreaker.recordFailure()
-            throw LlmError.Timeout("claudemax-cli")
+            throw LlmError.Timeout(PROVIDER_ID)
         } catch (e: LlmError) {
             circuitBreaker.recordFailure()
             throw e
@@ -63,6 +63,8 @@ actual class ClaudeMaxCliProvider internal constructor(
     actual fun isAvailable(): Boolean = !circuitBreaker.isOpen()
 
     companion object {
+        const val PROVIDER_ID = "claudemax-cli"
+
         /** Test entry — inject a [FakeClaudeCliRunner]. */
         fun forTesting(
             runner: ClaudeCliRunner,
@@ -103,7 +105,11 @@ actual class ClaudeMaxCliProvider internal constructor(
             }
         }
 
-        private fun encodePrompt(request: LlmRequest): String =
-            request.messages.filter { it.role == Role.USER }.joinToString("\n") { it.content }
+        private fun encodePrompt(request: LlmRequest): String {
+            require(request.messages.all { it.role == Role.USER }) {
+                "ClaudeMax one-shot expects USER-only messages; got ${request.messages.map { it.role }}"
+            }
+            return request.messages.joinToString("\n") { it.content }
+        }
     }
 }
