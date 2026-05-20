@@ -10,7 +10,7 @@ appends to BRIDGE): shipped items move to `## Done` with their PR number, new ga
 added, the header below is refreshed.
 
 - **Last updated:** 2026-05-20
-- **master HEAD at last update:** `f8dc224` (PR #28 merged); PR #29 open + CI-green.
+- **master HEAD at last update:** `f8dc224` (PR #28 merged). PR #29 open — ClaudeMax rewrite + this backlog + the doc-process wiring (CI re-runs on each push, code last green at `e07b959`).
 - **Binding spec:** `docs/superpowers/specs/2026-05-17-dietician-design.md`
 - **Session handoff:** `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/BRIDGE.md`
 
@@ -68,6 +68,7 @@ Scaffold; Plan-1 event-sourced data ledger + sync; Plan-2 `:shared:llm` LLM rout
 | Android Coach client wiring | PARTIAL | server path ready (iter-11.5); Android client pending |
 | 5 dormant integrations — smart scale, training log, sleep, HRV, activity feed | FUTURE | architectural seats reserved, spec §10 |
 | Parser cache-token under-reporting; real-`claude`-binary automated test | FOLLOWUP (#29) | audit under-reports prompt size on the cost=0 path; integration test uses a stub script |
+| Stop hook for deterministic session-end handoff | FOLLOWUP | council `1779301114` — `/wrap` is invoked (by user or model), not enforced; a Stop hook would run the BRIDGE + backlog reconcile deterministically so it cannot be skipped |
 | Small UI: Home empty-state copy; `ReceiptUpload` file-save wiring | MINOR | |
 
 ---
