@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
@@ -27,6 +28,10 @@ import java.util.concurrent.TimeUnit
  *    `claude -p` is request-then-response — it consumes its whole prompt before
  *    emitting output — so the single stdout pipe cannot fill mid-write. Do not
  *    reuse this runner for a CLI that streams output while still reading input.
+ *  - a process that exits before consuming stdin (a crash, or output that never
+ *    reads input) closes its stdin pipe early; the resulting write `IOException`
+ *    is swallowed so the process's own stdout + exit code — which carry the real
+ *    outcome — are still captured rather than masked by a bare "Stream closed".
  */
 class ProcessClaudeCliRunner(
     private val binaryPath: String = resolveClaudeBinary(),
@@ -41,7 +46,13 @@ class ProcessClaudeCliRunner(
             val proc = pb.start()
             try {
                 runInterruptible {
-                    proc.outputStream.use { it.write(stdin.toByteArray(StandardCharsets.UTF_8)) }
+                    try {
+                        proc.outputStream.use { it.write(stdin.toByteArray(StandardCharsets.UTF_8)) }
+                    } catch (_: IOException) {
+                        // The process closed its stdin before consuming the prompt
+                        // (it crashed, or ignores input). Not fatal — fall through
+                        // and read its stdout + exit code, which carry the outcome.
+                    }
                     val out = proc.inputStream.readBytes().toString(StandardCharsets.UTF_8)
                     val exit = proc.waitFor()
                     CliResult(exitCode = exit, stdout = out)
