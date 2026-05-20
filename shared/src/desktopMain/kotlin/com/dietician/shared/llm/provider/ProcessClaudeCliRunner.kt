@@ -1,9 +1,11 @@
 package com.dietician.shared.llm.provider
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.TimeUnit
 
 /**
  * Production [ClaudeCliRunner] — spawns the real `claude` CLI one-shot.
@@ -21,6 +23,10 @@ import java.nio.charset.StandardCharsets
  *    drill showed ~12.5k tokens of CLAUDE.md bloat leaking into one call).
  *  - `redirectErrorStream(true)` folds stderr into stdout so a chatty stderr
  *    cannot fill the OS pipe buffer and deadlock the writer (Windows hazard).
+ *  - stdin is written in full before stdout is read. That is safe ONLY because
+ *    `claude -p` is request-then-response — it consumes its whole prompt before
+ *    emitting output — so the single stdout pipe cannot fill mid-write. Do not
+ *    reuse this runner for a CLI that streams output while still reading input.
  */
 class ProcessClaudeCliRunner(
     private val binaryPath: String = resolveClaudeBinary(),
@@ -33,10 +39,19 @@ class ProcessClaudeCliRunner(
                 .directory(workingDir)
             pb.environment().remove("ANTHROPIC_API_KEY")
             val proc = pb.start()
-            proc.outputStream.use { it.write(stdin.toByteArray(StandardCharsets.UTF_8)) }
-            val out = proc.inputStream.readBytes().toString(StandardCharsets.UTF_8)
-            val exit = proc.waitFor()
-            CliResult(exitCode = exit, stdout = out)
+            try {
+                runInterruptible {
+                    proc.outputStream.use { it.write(stdin.toByteArray(StandardCharsets.UTF_8)) }
+                    val out = proc.inputStream.readBytes().toString(StandardCharsets.UTF_8)
+                    val exit = proc.waitFor()
+                    CliResult(exitCode = exit, stdout = out)
+                }
+            } finally {
+                if (proc.isAlive) {
+                    proc.destroy()
+                    if (!proc.waitFor(2, TimeUnit.SECONDS)) proc.destroyForcibly()
+                }
+            }
         }
 }
 
