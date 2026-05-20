@@ -7,6 +7,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.dietician.shared.data.sql.DieticianDatabase
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -80,6 +81,12 @@ class AndroidSchemaUpgradeTest {
         return found
     }
 
+    @Before
+    fun deleteStaleDatabaseIfPresent() {
+        ApplicationProvider.getApplicationContext<android.content.Context>()
+            .deleteDatabase("upgrade-test.db")
+    }
+
     @Test
     fun upgradingFromV1RunsTheMigrationAndAddsAuditPendingOutbox() {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
@@ -95,9 +102,8 @@ class AndroidSchemaUpgradeTest {
             name = "upgrade-test.db",
         )
 
-        // Force the DB open (the driver is lazy; the first query triggers onUpgrade).
-        tableExists(driver, "audit_pending_outbox")
-
+        // This query is the first DB access — it forces AndroidSqliteDriver to open
+        // the file, which runs onUpgrade(1, 2) -> Schema.migrate -> 1.sqm.
         assertTrue(
             tableExists(driver, "audit_pending_outbox"),
             "audit_pending_outbox must exist after upgrading from v1 to v2 via 1.sqm",
