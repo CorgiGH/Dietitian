@@ -63,7 +63,11 @@ val desktopPlatformModule: Module = module {
                                 ),
                             ),
                         )
-                    val resp = cli.call(request, model = "")
+                    // Empty model lets the `claude` CLI use its own configured
+                    // default; ClaudeMaxJsonParser reads the actual model id back
+                    // from the response envelope. "sonnet" is the explicit
+                    // fallback label if the envelope omits it.
+                    val resp = cli.call(request, model = "sonnet")
                     emit(
                         LlmChunk(
                             text = resp.text,
