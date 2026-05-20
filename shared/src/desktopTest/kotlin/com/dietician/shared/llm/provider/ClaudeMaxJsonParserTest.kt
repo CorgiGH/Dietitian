@@ -77,4 +77,22 @@ class ClaudeMaxJsonParserTest {
         val stdout = """[1, "junk", true]"""
         assertFailsWith<LlmError.TransientFailure> { parser.parse(stdout, "") }
     }
+
+    @Test
+    fun `parses the captured real claude CLI envelope fixture`() {
+        // Guards the parser against the real `claude -p --output-format json`
+        // wire shape captured from CLI v2.1.x (council 1779276774 CONFIDENCE-9
+        // condition — parse against a real envelope, not only inline literals).
+        val fixture = ClaudeMaxJsonParserTest::class.java
+            .getResource("/claudemax/result-success.json")
+            ?.readText()
+            ?: error("missing test resource claudemax/result-success.json")
+        val resp = parser.parse(fixture, requestedModel = "")
+        assertEquals("Aim for 137 g protein today.", resp.text)
+        assertEquals(1200, resp.inputTokens)
+        assertEquals(18, resp.outputTokens)
+        assertEquals("claude-opus-4-7", resp.model)
+        assertEquals(0, resp.costCents)
+        assertEquals(FinishReason.STOP, resp.finishReason)
+    }
 }
