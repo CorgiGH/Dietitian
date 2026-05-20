@@ -71,4 +71,10 @@ class ClaudeMaxJsonParserTest {
         val resp = parser.parse(stdout, requestedModel = "sonnet")
         assertEquals("sonnet", resp.model)
     }
+
+    @Test
+    fun `throws LlmError not a raw exception when array has non-object elements`() {
+        val stdout = """[1, "junk", true]"""
+        assertFailsWith<LlmError.TransientFailure> { parser.parse(stdout, "") }
+    }
 }

@@ -44,7 +44,7 @@ class ClaudeMaxJsonParser(
                 IllegalStateException("claude CLI output was not valid JSON: ${stdout.take(200)}"),
             )
         val events: List<JsonObject> = when (root) {
-            is JsonArray -> root.map { it.jsonObject }
+            is JsonArray -> root.mapNotNull { it as? JsonObject }
             is JsonObject -> listOf(root)
             else -> throw LlmError.TransientFailure(
                 IllegalStateException("unexpected claude CLI JSON shape"),
