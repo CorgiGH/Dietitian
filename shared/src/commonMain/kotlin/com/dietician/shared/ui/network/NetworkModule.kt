@@ -1,5 +1,6 @@
 package com.dietician.shared.ui.network
 
+import com.dietician.shared.ui.auth.AuthRepository
 import com.dietician.shared.ui.data.AuditRepository
 import com.dietician.shared.ui.data.ByokRepository
 import com.dietician.shared.ui.data.HttpAuditRepository
@@ -50,4 +51,9 @@ val networkModule: Module = module {
     single<RecipeIngestClient> {
         HttpRecipeIngestClient(get(), get<BaseUrlProvider>().baseUrl)
     }
+
+    // iter-11 desktop-drill fix: real magic-link auth so the desktop client can
+    // obtain a server session (the onboarding "Simulate verify" only set a local
+    // onboarded flag — Coach 2PC then 401'd for lack of a real session cookie).
+    single { AuthRepository(get(), get<BaseUrlProvider>().baseUrl) }
 }

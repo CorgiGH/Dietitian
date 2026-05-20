@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.get
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
@@ -39,7 +40,7 @@ class SessionInterceptorTest {
             Session(
                 sessionId = "sess-1",
                 subjectId = "victor-uuid",
-                expiresAt = "2026-06-01T00:00:00Z",
+                expiresAtMs = 1780358400000L,
             ),
         )
         var capturedSubjectId: String? = null
@@ -53,6 +54,47 @@ class SessionInterceptorTest {
         }
         client.get("http://test/me")
         assertEquals("victor-uuid", capturedSubjectId)
+    }
+
+    @Test
+    fun `attaches Authorization Bearer header when session active`() = runTest {
+        // The desktop reaches the VPS over plain http:// (Tailscale) so the
+        // server's Secure session cookie is unusable; the server's Bearer
+        // fallback (AuthMiddleware.extractSessionId) is the authed-call path.
+        SessionStore.set(
+            Session(
+                sessionId = "sess-xyz",
+                subjectId = "victor-uuid",
+                expiresAtMs = 1780358400000L,
+            ),
+        )
+        var capturedAuth: String? = null
+        val client = HttpClient(
+            MockEngine { request ->
+                capturedAuth = request.headers[HttpHeaders.Authorization]
+                respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
+            },
+        ) {
+            install(SessionInterceptor)
+        }
+        client.get("http://test/coach/reserve")
+        assertEquals("Bearer sess-xyz", capturedAuth)
+    }
+
+    @Test
+    fun `omits Authorization header when no session`() = runTest {
+        // SessionStore.clear() ran in BeforeTest.
+        var capturedAuth: String? = "preset"
+        val client = HttpClient(
+            MockEngine { request ->
+                capturedAuth = request.headers[HttpHeaders.Authorization]
+                respond("ok", HttpStatusCode.OK, headersOf("Content-Type", "text/plain"))
+            },
+        ) {
+            install(SessionInterceptor)
+        }
+        client.get("http://test/health")
+        assertNull(capturedAuth)
     }
 
     @Test
@@ -77,7 +119,7 @@ class SessionInterceptorTest {
             Session(
                 sessionId = "sess-a",
                 subjectId = "subject-a",
-                expiresAt = "2026-06-01T00:00:00Z",
+                expiresAtMs = 1780358400000L,
             ),
         )
         var captured: String? = null
@@ -97,7 +139,7 @@ class SessionInterceptorTest {
             Session(
                 sessionId = "sess-b",
                 subjectId = "subject-b",
-                expiresAt = "2026-06-01T00:00:00Z",
+                expiresAtMs = 1780358400000L,
             ),
         )
         client.get("http://test/me")
@@ -129,7 +171,7 @@ class SubjectIdConsistencyTest {
             Session(
                 sessionId = "s",
                 subjectId = "victor",
-                expiresAt = "2026-06-01T00:00:00Z",
+                expiresAtMs = 1780358400000L,
             ),
         )
         var captured: String? = null
