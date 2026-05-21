@@ -1,0 +1,17 @@
+-- Migration v1 -> v2. Retroactively adds the audit_pending_outbox table
+-- (iter-11 client outbox for the 2-phase-commit Coach pipeline). A client DB
+-- created before 0009_audit_pending_outbox.sq existed never received this
+-- table, because the old desktop `.schema_applied` marker skipped Schema.create
+-- and Schema.version never moved off 1. Council 1779306247.
+
+CREATE TABLE audit_pending_outbox (
+    idempotency_key      TEXT NOT NULL PRIMARY KEY,
+    reservation_id       TEXT,
+    prompt_hash          TEXT NOT NULL,
+    started_at_ms        INTEGER NOT NULL,
+    last_attempt_at_ms   INTEGER NOT NULL,
+    attempts             INTEGER NOT NULL DEFAULT 0,
+    provider             TEXT NOT NULL
+);
+
+CREATE INDEX idx_audit_pending_outbox_started ON audit_pending_outbox (started_at_ms);

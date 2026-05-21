@@ -22,6 +22,9 @@ object DataModuleAndroid {
                     }
                 },
             )
+        // Force the DB open (runs Schema.create / onUpgrade), then assert the schema
+        // converged. Council 1779306247 runtime invariant.
+        SchemaInvariant.assertExpectedTables(driver)
         // Council BREAK #5 mandate: checkpoint on app-background.
         WalCheckpointHook().registerOnBackground {
             WalPragmas.forceTruncatingCheckpoint(driver)
