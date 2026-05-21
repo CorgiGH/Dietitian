@@ -4,7 +4,7 @@ Project-level Claude Code instructions for the Dietician repository at `C:\Users
 
 ## Project orientation
 
-Personal AI dietician for one user (Victor — UAIC year-1 AI student in Iași, lean-bulking 188 cm / 67.5 kg → 2750 kcal / 137 g protein). Kotlin Multiplatform Compose (Android phone + Windows desktop). VPS-canonical Postgres on `46.247.109.91` via Tailscale (`100.101.47.77:8081`). Mergeable into `jarvis-kotlin` as a Subsystem later.
+Personal AI dietician for one user (Victor — UAIC year-1 AI student in Iași, lean-bulking 188 cm / 67.5 kg → 2750 kcal / 137 g protein). Kotlin Multiplatform Compose (Android phone + Windows desktop). VPS-canonical Postgres on `46.247.109.91` via Tailscale (`100.101.47.77:5432`; the backend HTTP API is `:8081`). Mergeable into `jarvis-kotlin` as a Subsystem later.
 
 Spec is source of truth: `docs/superpowers/specs/2026-05-17-dietician-design.md`. Read it before any non-trivial change. Agent conventions: `AGENTS.md`. Jarvis merge contract: `JARVIS_MERGE.md`. Runbooks: `docs/runbooks/`.
 
@@ -22,7 +22,7 @@ Spec is source of truth: `docs/superpowers/specs/2026-05-17-dietician-design.md`
 
 ## Design wiki — `docs/design/`
 
-The product has an LLM-maintained design knowledge base at `docs/design/`. Six pages: `index.md`, `overview.md`, `visual-language.md`, `ux-patterns.md`, `components.md`, `references.md`. Built on the Karpathy LLM-Wiki pattern (three layers: raw → wiki → schema) and the AGENTS.md frontmatter schema.
+The product has an LLM-maintained design knowledge base at `docs/design/`. Seven pages: `index.md`, `overview.md`, `visual-language.md`, `ux-patterns.md`, `components.md`, `implementation.md`, `references.md`. Built on the Karpathy LLM-Wiki pattern (three layers: raw → wiki → schema) and the AGENTS.md frontmatter schema.
 
 ### When to read it
 
