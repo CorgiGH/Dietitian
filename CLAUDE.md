@@ -10,15 +10,15 @@ Spec is source of truth: `docs/superpowers/specs/2026-05-17-dietician-design.md`
 
 ## Required reading order at session start
 
-1. `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/BRIDGE.md` — canonical session handoff, latest entry has live state, locked decisions, open items, hot work.
-2. `docs/backlog.md` — **canonical production backlog**: the P0-P3 remaining-work + objectives list. Sole authority for what is left and in what priority. Read it to know what to work on next.
+1. `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/BRIDGE-HEAD.md` — current state: git/VPS state, hot work, open items, flags. Read this every session.
+2. `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/backlog.md` — **canonical production backlog**: the P0-P3 remaining-work + objectives list. Sole authority for what is left and in what priority. Read it to know what to work on next.
 3. `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/MEMORY.md` — memory index.
 4. **This file** — project rules.
 5. `AGENTS.md` — agent conventions (wiki maintenance, LLM routing, anti-patterns).
 6. **For any frontend/UI/design work: `docs/design/index.md` — design wiki entry point.** See §"Design wiki" below.
 7. Spec + plans + runbooks as the task demands.
 
-**Doc ownership (no duplication):** `docs/backlog.md` owns *what is left + priority* (living, mutable). `BRIDGE.md` owns *what happened, per session* (append-only chronological handoff) — it points to the backlog, it does not restate the P0 list. The spec owns *what the product must do*. Update the backlog at `/wrap` (the `/wrap` command does this) — never let BRIDGE and the backlog disagree on priority.
+**Doc ownership (no duplication):** `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/backlog.md` owns *what is left + priority* (living, mutable). `BRIDGE-LOG.md` owns *what happened, per session* (append-only chronological handoff); `BRIDGE-HEAD.md` owns *current state* — it points to the backlog, it does not restate the P0 list. The spec owns *what the product must do*. Update the backlog at `/wrap` (the `/wrap` command does this) — never let BRIDGE-LOG and the backlog disagree on priority. BRIDGE-HEAD.md is a derived cache — if wrong, revert it via the memory repo's git history (it holds every prior version) and re-run /wrap.
 
 ## Design wiki — `docs/design/`
 
@@ -136,8 +136,8 @@ Custom Detekt rule: `UnusedUnderscoreDestructuring` flags `_propName` destructur
 
 ## Slash commands available
 
-- `/wrap` — `.claude/commands/wrap.md` (append-only session handoff entry to BRIDGE.md)
-- `/sanity` — `.claude/commands/sanity.md` (deep memory audit, dispatches sub-agent ~5-10k tokens)
+- `/wrap` — `.claude/commands/wrap.md` (CAPTURE: rewrites BRIDGE-HEAD.md, appends a BRIDGE-LOG.md entry, touches backlog.md — run at session end)
+- `/dream` — `.claude/commands/dream.md` (CURATE: out-of-band memory curation — run in a fresh session, periodically)
 
 ## Don't relitigate (locked decisions)
 

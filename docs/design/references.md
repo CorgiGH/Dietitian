@@ -38,7 +38,7 @@ Every external source cited by another page in this wiki + the internal artefact
 - `docs/runbooks/smoke-checklist-plan-4-5.md` — KMP UI smoke checklist; reflects the acceptance gates this design wiki targets.
 - `docs/runbooks/*.md` — 10+ failure-mode runbooks. Useful for designing error-state surfaces.
 - `shared/src/commonMain/kotlin/com/dietician/shared/ui/` — KMP Compose source tree. The visual source of truth for tokens, components, screens.
-- `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/BRIDGE.md` — append-only session handoff log; useful when a design decision was made in a prior session and needs context.
+- `~/.claude/projects/C--Users-User-Desktop-Dietician/memory/BRIDGE-LOG.md` — append-only narrative session handoff log; BRIDGE-HEAD.md alongside it holds current state.
 
 ## Karpathy LLM Wiki pattern (schema source)
 
