@@ -323,7 +323,7 @@ Expected: on `feat/wrap-dream-memory-redesign`; recent commits include the backl
 
 - [ ] **Step 3: No dangling references**
 
-Run: `grep -rn "docs/backlog\.md" "C:/Users/User/Desktop/Dietician" --include=*.md | grep -v "superpowers/specs\|superpowers/plans\|superpowers/research"`
+Run: `grep -rn "docs/backlog\.md" "C:/Users/User/Desktop/Dietician" --include=*.md | grep -v "superpowers/specs\|superpowers/plans\|superpowers/research\|council-cache"`
 Expected: no output — every live `docs/backlog.md` reference is updated; only frozen historical artifacts may still mention the old path.
 
 ---
@@ -565,7 +565,7 @@ Expected: `## main...origin/main` with no `ahead`.
 
 - [ ] **Step 6: Verify no dangling references remain (whole-repo grep, per spec §13)**
 
-Run: `grep -rn "docs/backlog\.md\|memory/BRIDGE\.md" "C:/Users/User/Desktop/Dietician" --include=*.md | grep -v "superpowers/specs\|superpowers/plans\|superpowers/research"`
+Run: `grep -rn "docs/backlog\.md\|memory/BRIDGE\.md" "C:/Users/User/Desktop/Dietician" --include=*.md | grep -v "superpowers/specs\|superpowers/plans\|superpowers/research\|council-cache"`
 Expected: no output — every live reference is updated; only frozen historical artifacts under `superpowers/` may still mention the old paths.
 
 - [ ] **Step 7: Verify the staleness nag stays silent when curation is fresh**
